@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  پاس‌کشیک — Stage 1 connectivity test  (index.html)
+  ----------------------------------------------------------------------------
+  PURPOSE
+  This page is throwaway scaffolding. It exists to prove four risky assumptions
+  are true BEFORE we invest in building real screens on top of them:
+
+      1. GitHub Pages is actually serving files out of this repository.
+      2. The Vazirmatn font downloads and renders on a real Iranian phone.
+         (This is the assumption most likely to fail — the font is hosted
+          outside Iran. If it fails we bundle the font into the repo instead.)
+      3. Right-to-left layout behaves correctly on this device.
+      4. Telegram's Web App bridge is reachable and reports the user's theme.
+
+  Stage 2 deletes this file entirely. Nothing here is final. Do not build on it.
+  ============================================================================
+-->
+<html lang="fa" dir="rtl">
+<!--
+  dir="rtl" on the <html> element flips the ENTIRE document right-to-left in one
+  place: text alignment, scrollbar side, and the meaning of "start"/"end" in CSS.
+  Setting it here rather than per-element is what will later put the hamburger
+  menu on the right and slide the drawer in from the right, for free.
+-->
+<head>
+<meta charset="utf-8">
+<!-- maximum-scale=1 stops Android zooming when a text field is focused, which
+     would otherwise make form screens jump around. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>پاس‌کشیک</title>
+
+<!-- Telegram's bridge. Must load before our own script so window.Telegram
+     exists by the time we read it. Served by Telegram themselves. -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<!-- Vazirmatn, loaded from two independent CDNs. If the first is unreachable
+     the second may still succeed; if both fail we fall back to a system font
+     and the check below will report it. -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/Vazirmatn-font-face.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap">
+
+<style>
+  /* ------------------------------------------------------------------------
+     DESIGN TOKENS
+     Every colour and size lives here as a CSS variable. In the real app these
+     move to config.js. Changing a value here changes it everywhere it is used.
+     --------------------------------------------------------------------- */
+  :root {
+    --brand:        #01579B;  /* Deep Medical Blue — primary */
+    --brand-dark:   #013A69;  /* darker shade, used for the status bar area */
+    --accent:       #FFC107;  /* Amber — accent */
+    --bg:           #ECEFF1;  /* page background (Material grey 50-ish) */
+    --surface:      #FFFFFF;  /* card background */
+    --text:         #212121;  /* primary text */
+    --text-muted:   #6B7280;  /* secondary text */
+    --ok:           #2E7D32;  /* pass state green */
+    --fail:         #C62828;  /* fail state red */
+    --radius:       8px;
+  }
+
+  /* Vazirmatn first, then whatever Persian-capable font the phone ships with. */
+  * { font-family: Vazirmatn, Tahoma, sans-serif; box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  /* Material-style app bar with the classic elevation shadow. */
+  .appbar {
+    background: var(--brand);
+    color: #fff;
+    padding: 16px;
+    font-size: 20px;
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(0,0,0,.3);
+  }
+
+  /* Card: white surface, rounded, raised. The building block of every screen. */
+  .card {
+    background: var(--surface);
+    margin: 16px;
+    padding: 16px;
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #EEE;
+  }
+  .row:last-child { border-bottom: none; }
+
+  .label  { font-size: 15px; }
+  .result { font-size: 14px; font-weight: 700; }
+  .pass   { color: var(--ok); }
+  .fail   { color: var(--fail); }
+  .note   { color: var(--text-muted); font-size: 13px; line-height: 1.9; }
+
+  /* Amber accent bar, purely to confirm the accent colour renders as expected. */
+  .accent-bar {
+    height: 4px;
+    background: var(--accent);
+  }
+</style>
+</head>
+
+<body>
+
+  <div class="appbar">پاس‌کشیک</div>
+  <div class="accent-bar"></div>
+
+  <div class="card">
+    <div class="row">
+      <span class="label">فونت وزیرمتن</span>
+      <span class="result" id="check-font">…</span>
+    </div>
+    <div class="row">
+      <span class="label">چیدمان راست‌به‌چپ</span>
+      <span class="result" id="check-rtl">…</span>
+    </div>
+    <div class="row">
+      <span class="label">اعداد فارسی</span>
+      <span class="result" id="check-digits">…</span>
+    </div>
+    <div class="row">
+      <span class="label">اتصال به تلگرام</span>
+      <span class="result" id="check-telegram">…</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="note" id="environment">…</div>
+  </div>
+
+<script>
+/* ==========================================================================
+   CONFIG — in the real app this becomes the separate config.js file that holds
+   every string, colour, list and limit. Kept inline here so this test page
+   stays a single file you can paste in one go.
+   ====================================================================== */
+const CONFIG = {
+  PASS_LABEL: 'سالم',
+  FAIL_LABEL: 'مشکل دارد',
+  // Font we require. Used both in CSS above and by the font check below.
+  REQUIRED_FONT: 'Vazirmatn'
+};
+
+/**
+ * Convert every English digit in a value into its Persian equivalent.
+ *
+ * Why this exists: the app must display Persian numerals everywhere, but
+ * JavaScript arithmetic, date maths and <input type="number"> all produce
+ * English digits. Rather than scatter conversions around, everything is
+ * computed in English and passed through this one function at display time.
+ *
+ * The reverse direction (Persian typed by the user -> English for storage)
+ * gets its own function in Stage 2.
+ *
+ * @param   {string|number} value  Anything containing digits.
+ * @returns {string}               Same text with 0-9 replaced by ۰-۹.
+ */
+function toPersianDigits(value) {
+  const persian = ['۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'];
+  // String(value) guards against being handed a number instead of a string.
+  return String(value).replace(/[0-9]/g, function (digit) {
+    return persian[digit];
+  });
+}
+
+/**
+ * Write a pass/fail result into one of the rows above.
+ *
+ * @param {string}  elementId  id of the <span> to fill.
+ * @param {boolean} passed     true renders green "سالم", false red "مشکل دارد".
+ * @param {string}  [detail]   optional text shown instead of the default label.
+ */
+function report(elementId, passed, detail) {
+  const el = document.getElementById(elementId);
+  el.textContent = detail || (passed ? CONFIG.PASS_LABEL : CONFIG.FAIL_LABEL);
+  el.className = 'result ' + (passed ? 'pass' : 'fail');
+}
+
+/* --------------------------------------------------------------------------
+   CHECK 1 — Did the Vazirmatn font file actually download?
+   document.fonts.check() returns false if the browser fell back to another
+   font, which is exactly the failure mode we are worried about in Iran.
+   We wait for document.fonts.ready so we are not asking before it has loaded.
+   ----------------------------------------------------------------------- */
+document.fonts.ready.then(function () {
+  const loaded = document.fonts.check('16px ' + CONFIG.REQUIRED_FONT);
+  report('check-font', loaded, loaded ? 'سالم' : 'بارگذاری نشد');
+});
+
+/* --------------------------------------------------------------------------
+   CHECK 2 — Is the document genuinely rendering right-to-left?
+   We ask the browser for the computed direction rather than trusting the
+   attribute we set, because some in-app browsers override it.
+   ----------------------------------------------------------------------- */
+const direction = getComputedStyle(document.documentElement).direction;
+report('check-rtl', direction === 'rtl', direction === 'rtl' ? 'سالم' : direction);
+
+/* --------------------------------------------------------------------------
+   CHECK 3 — Persian numeral conversion, shown live so you can eyeball the
+   glyphs rather than trust a boolean.
+   ----------------------------------------------------------------------- */
+report('check-digits', true, toPersianDigits('0123456789'));
+
+/* --------------------------------------------------------------------------
+   CHECK 4 — Is Telegram's bridge present?
+   Opened in a normal browser this is expected to FAIL — that is correct
+   behaviour, not a bug. It should only pass once the app is opened from
+   inside Telegram, which we wire up in Stage 3.
+   ----------------------------------------------------------------------- */
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg && tg.initData !== undefined && tg.platform !== 'unknown') {
+  tg.ready();   // tells Telegram the page has finished loading
+  tg.expand();  // asks Telegram for the full screen height
+  report('check-telegram', true, 'متصل — ' + tg.colorScheme);
+} else {
+  report('check-telegram', false, 'خارج از تلگرام');
+}
+
+/* --------------------------------------------------------------------------
+   Environment summary — plain diagnostics, useful when something misbehaves
+   on your specific device and I need to know what it is.
+   ----------------------------------------------------------------------- */
+document.getElementById('environment').textContent =
+  'عرض صفحه: ' + toPersianDigits(window.innerWidth) + ' پیکسل' +
+  ' — نسخه تلگرام: ' + (tg && tg.version ? toPersianDigits(tg.version) : 'ندارد');
+</script>
+
+</body>
+</html>
