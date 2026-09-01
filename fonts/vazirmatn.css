@@ -1,0 +1,59 @@
+/*
+  ============================================================================
+  VAZIRMATN — SELF-HOSTED FONT DEFINITIONS   (fonts/vazirmatn.css)
+  ----------------------------------------------------------------------------
+  WHY THIS FILE EXISTS
+  The first build loaded Vazirmatn from two public CDNs (jsDelivr and Google
+  Fonts). Testing on a real Iranian connection showed BOTH are unreachable, so
+  the app silently fell back to a system font.
+
+  The fix is to serve the font from the same GitHub Pages origin as the app
+  itself. If the user can load the app at all, they can load the font — there
+  is no second server that can independently fail.
+
+  Cost: ~200KB of font files committed into the repo, downloaded once and then
+  cached by the browser. Worth it for a guarantee.
+
+  ----------------------------------------------------------------------------
+  WEIGHTS PROVIDED
+      400  Regular  — body text, inputs, card content
+      500  Medium   — buttons, tab labels, emphasis  (Material Design default)
+      700  Bold     — app bar title, headings, prices
+
+  To add another weight (e.g. 300 Light):
+      1. Download Vazirmatn-Light.woff2 into this same fonts/ folder
+      2. Copy any @font-face block below, change the filename and font-weight
+  Nothing else in the app needs to change — weights are referenced by number.
+
+  ----------------------------------------------------------------------------
+  font-display: swap
+  Renders text immediately in a fallback font, then swaps to Vazirmatn once it
+  arrives. The alternative (default behaviour) is up to 3 seconds of invisible
+  text on a slow connection. A brief font flash beats a blank screen.
+  ============================================================================
+*/
+
+@font-face {
+  font-family: 'Vazirmatn';
+  /* Path is relative to THIS css file, so both live in fonts/ together. */
+  src: url('Vazirmatn-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('Vazirmatn-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
