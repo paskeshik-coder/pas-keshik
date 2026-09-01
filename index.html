@@ -38,8 +38,9 @@
 <!-- Vazirmatn, loaded from two independent CDNs. If the first is unreachable
      the second may still succeed; if both fail we fall back to a system font
      and the check below will report it. -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/Vazirmatn-font-face.css">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700&display=swap">
+<!-- Self-hosted Vazirmatn. Served from our own GitHub Pages origin because
+     testing proved jsDelivr and Google Fonts are both blocked in Iran. -->
+<link rel="stylesheet" href="fonts/vazirmatn.css">
 
 <style>
   /* ------------------------------------------------------------------------
