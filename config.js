@@ -174,6 +174,183 @@ const CONFIG = {
      SECTION 5 — GENERAL
      Strings that appear in more than one place.
      ====================================================================== */
+  /* ==========================================================================
+     SECTION 6 — SIGN-UP
+     A five-page wizard. Every label, hint, error message and list option is
+     defined here so the wording can be changed without opening any logic.
+
+     PAGE ORDER is fixed in signup.js; the content of each page is below.
+     ====================================================================== */
+  SIGNUP: {
+
+    // Shared button labels.
+    NEXT_BUTTON: 'بعدی',
+    BACK_BUTTON: 'قبلی',
+    SUBMIT_BUTTON: 'ثبت‌نام',
+
+    /*
+      Which corner the decorative blue arc occupies on each page, in order.
+      't'/'b' = top/bottom, 'l'/'r' = left/right. The arc moves around the
+      screen as the user advances, which gives the wizard a sense of travel
+      without adding anything they have to read.
+
+      Pages 1 and 5 carry a privacy panel along the bottom edge, so their arcs
+      are placed at the top to stay clear of it.
+    */
+    ARC_POSITIONS: ['tl', 'tr', 'br', 'bl', 'tr'],
+
+
+    /* ---- PAGE 1: name ---------------------------------------------------- */
+    PAGE_NAME: {
+      TITLE: 'نام شما چیست؟',
+      FIRST_LABEL: 'نام',
+      LAST_LABEL: 'نام خانوادگی',
+      HINT: 'به فارسی',
+      ERROR_EMPTY: 'این فیلد الزامی است',
+      ERROR_PERSIAN: 'فقط حروف فارسی مجاز است',
+      ERROR_TOO_SHORT: 'حداقل ۲ حرف وارد کنید',
+      PRIVACY_NOTE: 'نام شما در هیچ کجای برنامه به‌صورت عمومی نمایش داده نمی‌شود.'
+    },
+
+
+    /* ---- PAGE 2: major --------------------------------------------------- */
+    PAGE_MAJOR: {
+      TITLE: 'رشته تحصیلی',
+      SUBTITLE: 'بکشید و انتخاب کنید',
+      TAP_HINT: 'برای انتخاب، روی کارت بزنید',
+
+      /*
+        To add a major: copy a line below, then add a matching icon under
+        MAJORS in illustrations.js using the same `icon` name.
+
+        `id` is what gets stored in the database. Never change an existing id
+        once real users exist — their saved records point at it. `label` is
+        display text and is safe to reword at any time.
+
+        `hasWards` controls whether the ward dropdown appears when this user
+        creates a request. Only medicine and nursing use wards.
+      */
+      MAJORS: [
+        { id: 'medicine',  label: 'پزشکی',    icon: 'medicine',  hasWards: true  },
+        { id: 'nursing',   label: 'پرستاری',  icon: 'nursing',   hasWards: true  },
+        { id: 'midwifery', label: 'مامایی',   icon: 'midwifery', hasWards: false },
+        { id: 'pharmacy',  label: 'داروسازی', icon: 'pharmacy',  hasWards: false }
+      ]
+    },
+
+
+    /* ---- PAGE 3: entry year and semester --------------------------------- */
+    PAGE_YEAR: {
+      TITLE: 'سال ورود',
+      YEAR_LABEL: 'سال',
+      SEMESTER_LABEL: 'نیمسال',
+
+      /*
+        The year list is computed from the current Persian year rather than
+        written out, so it stays correct after every Nowruz with no edit.
+
+        With the current year 1405, these settings offer 1395 to 1400.
+        MIN_YEARS_AGO is the most recent year offered, MAX_YEARS_AGO the
+        oldest. DEFAULT_YEARS_AGO decides where the wheel opens.
+      */
+      MIN_YEARS_AGO: 5,
+      MAX_YEARS_AGO: 10,
+      DEFAULT_YEARS_AGO: 7,
+
+      SEMESTERS: [
+        { id: 'mehr',   label: 'مهر' },
+        { id: 'bahman', label: 'بهمن' }
+      ]
+    },
+
+
+    /* ---- PAGE 4: university ---------------------------------------------- */
+    PAGE_UNIVERSITY: {
+      TITLE: 'دانشگاه',
+      SEARCH_PLACEHOLDER: 'نام دانشگاه را جستجو کنید',
+      SUGGESTIONS_LABEL: 'پیشنهاد',
+      NO_RESULTS: 'دانشگاهی با این نام پیدا نشد',
+
+      /*
+        PLACEHOLDER LIST — replace with your real one.
+
+        Each entry pairs a university with its city. The city is never asked
+        for directly; it is derived from this pairing. That is what lets the
+        search board scope to the user's city, and lets the university filter
+        offer only the universities in it.
+
+        `id` is stored in the database and must stay stable once real users
+        exist. `name` and `city` are display text and safe to reword.
+
+        To add one: copy a line, give it an id no other entry uses.
+      */
+      UNIVERSITIES: [
+        { id: 'tums',      name: 'علوم پزشکی تهران',            city: 'تهران' },
+        { id: 'sbmu',      name: 'علوم پزشکی شهید بهشتی',       city: 'تهران' },
+        { id: 'iums',      name: 'علوم پزشکی ایران',            city: 'تهران' },
+        { id: 'abzums',    name: 'علوم پزشکی البرز',            city: 'کرج' },
+        { id: 'mui',       name: 'علوم پزشکی اصفهان',           city: 'اصفهان' },
+        { id: 'mums',      name: 'علوم پزشکی مشهد',             city: 'مشهد' },
+        { id: 'sums',      name: 'علوم پزشکی شیراز',            city: 'شیراز' },
+        { id: 'tbzmed',    name: 'علوم پزشکی تبریز',            city: 'تبریز' },
+        { id: 'ajums',     name: 'علوم پزشکی جندی‌شاپور اهواز', city: 'اهواز' },
+        { id: 'kmu',       name: 'علوم پزشکی کرمان',            city: 'کرمان' },
+        { id: 'ssu',       name: 'علوم پزشکی شهید صدوقی یزد',   city: 'یزد' },
+        { id: 'gums',      name: 'علوم پزشکی گیلان',            city: 'رشت' },
+        { id: 'mazums',    name: 'علوم پزشکی مازندران',         city: 'ساری' },
+        { id: 'kums',      name: 'علوم پزشکی کرمانشاه',         city: 'کرمانشاه' },
+        { id: 'umsha',     name: 'علوم پزشکی همدان',            city: 'همدان' }
+      ],
+
+      // Shown as tappable chips before the user types anything, so the most
+      // common answers need no typing at all. Values are ids from the list.
+      SUGGESTED: ['tums', 'sbmu', 'iums', 'mui', 'mums']
+    },
+
+
+    /* ---- PAGE 5: phone and invite code ----------------------------------- */
+    PAGE_CONTACT: {
+      TITLE: 'شماره تماس',
+      PHONE_LABEL: 'شماره تلفن همراه',
+
+      /*
+        The prefix is fixed in the field rather than typed. Every Iranian
+        mobile number begins 09, so showing it as part of the field means the
+        user types 9 digits instead of 11 and cannot enter a wrong prefix —
+        a whole class of validation error simply cannot occur.
+      */
+      PHONE_PREFIX: '09',
+      PHONE_REMAINING_DIGITS: 9,
+      PHONE_HINT: '۹ رقم باقی‌مانده را وارد کنید',
+      PHONE_ERROR: 'شماره تلفن باید ۱۱ رقم باشد',
+
+      INVITE_TOGGLE: 'کد دعوت دارید؟',
+      INVITE_LABEL: 'کد دعوت',
+      INVITE_LENGTH: 6,
+      // Case is significant: K7mR2X and k7mr2x are different codes.
+      INVITE_HINT: 'کد ۶ کاراکتری — به بزرگ و کوچک بودن حروف دقت کنید',
+      INVITE_ERROR: 'کد دعوت باید ۶ کاراکتر باشد',
+
+      PRIVACY_NOTE: 'شماره شما فقط پس از پذیرفتن یک پیشنهاد، برای طرف مقابل نمایش داده می‌شود.'
+    },
+
+
+    /* ---- Validation ------------------------------------------------------ */
+    VALIDATION: {
+      /*
+        Characters permitted in name fields. Written out as a literal list
+        rather than a Unicode range because the Arabic Unicode block also
+        contains digits and punctuation that must not be allowed through.
+
+        Includes a space and the zero-width non-joiner, so «محمد رضا» and
+        «سیدحسینی» with a نیم‌فاصله both pass.
+      */
+      PERSIAN_LETTERS: 'آأإئءابپتثجچحخدذرزژسشصضطظعغفقکگلمنوهیةيك\u200C ',
+      NAME_MIN_LENGTH: 2,
+      NAME_MAX_LENGTH: 30
+    }
+
+  },
   GENERAL: {
     APP_NAME: 'پاس‌کشیک',
 
