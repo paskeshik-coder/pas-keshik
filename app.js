@@ -171,7 +171,13 @@ const Screens = {
 
       const pagesHtml = pages.map(page => `
         <div class="intro-page">
-          <div class="intro-illustration">${ILLUSTRATIONS[page.illustration] || ''}</div>
+          <div class="intro-illustration">${
+            // A page may name built-in vector art, or point at an uploaded
+            // image file. The image path wins when both are present.
+            page.image
+              ? `<img src="${Utils.escapeHtml(page.image)}" alt="" style="width:100%;display:block">`
+              : (ART.INTRO[page.illustration] || '')
+          }</div>
           <h2 class="intro-title">${Utils.escapeHtml(page.title)}</h2>
           <p class="intro-text">${Utils.escapeHtml(page.text)}</p>
         </div>
