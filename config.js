@@ -391,6 +391,79 @@ const CONFIG = {
     }
 
   },
+  /* ==========================================================================
+     SECTION 7 — MAIN APP NAVIGATION
+     ====================================================================== */
+  NAV: {
+    // Shown at the top of the drawer. The header bar carries only the current
+    // screen's name, so this is where the app identifies itself.
+    BRAND: 'پاس‌کشیک',
+
+    /*
+      Drawer items, in display order.
+
+      `id`    routes to the matching entry in MainApp.SCREENS and must match it.
+      `label` is display text, safe to reword at any time.
+      `title` is what appears in the header bar. Usually the same as `label`,
+              but kept separate so a long drawer label can have a short header.
+      `icon`  names an SVG under ART.NAV in illustrations.js.
+
+      Reordering means moving a whole line. Removing one hides that screen
+      entirely without breaking anything that does not link to it.
+    */
+    ITEMS: [
+      { id: 'search',   label: 'جستجو',            title: 'جستجو',            icon: 'search' },
+      { id: 'requests', label: 'درخواست‌های من',    title: 'درخواست‌های من',    icon: 'clipboard' },
+      { id: 'offers',   label: 'پیشنهادهای من',    title: 'پیشنهادهای من',    icon: 'briefcase' },
+      { id: 'invite',   label: 'کد دعوت',          title: 'کد دعوت',          icon: 'ticket' },
+      { id: 'contact',  label: 'تماس با ما',       title: 'تماس با ما',       icon: 'mail' },
+      { id: 'settings', label: 'تنظیمات',          title: 'تنظیمات',          icon: 'gear' }
+    ],
+
+    // Screen shown when the app opens.
+    DEFAULT: 'search',
+
+    /*
+      Avatar colours. The circle takes its colour from a hash of the user's
+      name, so the same person always gets the same one. Derived rather than
+      fixed because avatars will later appear against other people's bids,
+      where a single shared colour would make everyone look identical.
+
+      These are Material 500-weight colours, chosen to hold white text.
+    */
+    AVATAR_COLORS: [
+      '#D32F2F', '#C2185B', '#7B1FA2', '#512DA8', '#303F9F',
+      '#0288D1', '#00796B', '#388E3C', '#F57C00', '#5D4037'
+    ],
+
+    LIKES_SUFFIX: '❤️'
+  },
+
+
+  /* ==========================================================================
+     SECTION 8 — DRAWER BEHAVIOUR
+     ====================================================================== */
+  DRAWER: {
+    // Drawer width as a percentage of screen width, capped in pixels so it
+    // does not become absurdly wide on a tablet.
+    WIDTH_PERCENT: 78,
+    MAX_WIDTH_PX: 320,
+
+    OPEN_MS: 260,
+    CLOSE_MS: 200,
+
+    /*
+      How far in from the right edge a swipe must begin to count as opening
+      the drawer, in pixels. Deliberately narrow: the search screen has
+      horizontally scrolling filter chips, and a wide capture zone would
+      swallow the start of every attempt to scroll them.
+    */
+    EDGE_ZONE_PX: 26,
+
+    // Fraction of the drawer's width a drag must cross before releasing
+    // completes the gesture rather than snapping back.
+    COMMIT_FRACTION: 0.4
+  },
   GENERAL: {
     APP_NAME: 'پاس‌کشیک',
 
