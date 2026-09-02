@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  FONT DIAGNOSTIC  (check.html)  —  temporary, deleted in Stage 2
+  ----------------------------------------------------------------------------
+  The font check on index.html reports only pass/fail, which tells us the font
+  is broken but not WHY. There are four separate things that could have gone
+  wrong and they need different fixes:
+
+      1. fonts/vazirmatn.css is not where we think it is  -> wrong path
+      2. The .woff2 files are missing from the server     -> upload failed
+      3. The .woff2 files exist but are not actually fonts -> corrupt download
+         (most likely: the download was blocked and Chrome saved an HTML error
+          page under the .woff2 filename — indistinguishable by name alone)
+      4. Everything is present and valid but the browser rejects it -> parse error
+
+  This page tests each one independently and prints the raw evidence: HTTP
+  status codes, exact byte counts, and the file's magic-number signature.
+  ============================================================================
+-->
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>بررسی فونت</title>
+<style>
+  body {
+    font-family: Tahoma, sans-serif;   /* deliberately NOT Vazirmatn */
+    background: #ECEFF1;
+    margin: 0;
+    padding: 12px;
+    font-size: 14px;
+  }
+  .item {
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    /* Long URLs and error text must wrap, not overflow a phone screen. */
+    word-break: break-all;
+    line-height: 1.8;
+  }
+  .name { font-weight: bold; margin-bottom: 6px; }
+  .ok   { color: #2E7D32; }
+  .bad  { color: #C62828; }
+  code  { background: #F5F5F5; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="output">در حال بررسی…</div>
+
+<script>
+/* ==========================================================================
+   The four files we expect to exist, as paths relative to this page.
+   Add or remove entries here if the font weights ever change.
+   ====================================================================== */
+const FILES_TO_CHECK = [
+  'fonts/vazirmatn.css',
+  'fonts/Vazirmatn-Regular.woff2',
+  'fonts/Vazirmatn-Medium.woff2',
+  'fonts/Vazirmatn-Bold.woff2'
+];
+
+/* Every .woff2 file on earth begins with these four bytes — the ASCII
+   characters w, O, F, 2. This is the file's "magic number". If the first four
+   bytes are anything else, the file is not a WOFF2 font no matter what its
+   name says. An HTML error page, for example, typically begins with '<'. */
+const WOFF2_SIGNATURE = [0x77, 0x4F, 0x46, 0x32];
+
+/**
+ * Append one result block to the page.
+ *
+ * @param {string} name    Heading, normally the file path being tested.
+ * @param {string} html    Result body. Allowed to contain markup.
+ */
+function addResult(name, html) {
+  const div = document.createElement('div');
+  div.className = 'item';
+  div.innerHTML = '<div class="name">' + name + '</div>' + html;
+  document.getElementById('output').appendChild(div);
+}
+
+/**
+ * Read the first four bytes of a downloaded file and describe what they are.
+ *
+ * Why bytes and not file size alone: a blocked download can produce a file of
+ * plausible size that happens to be an HTML error page. Size alone would not
+ * catch it; the signature always does.
+ *
+ * @param   {ArrayBuffer} buffer  The downloaded file contents.
+ * @returns {{valid: boolean, description: string}}
+ */
+function inspectSignature(buffer) {
+  // A file shorter than four bytes cannot carry a signature at all.
+  if (buffer.byteLength < 4) {
+    return { valid: false, description: 'فایل خالی یا خیلی کوچک است' };
+  }
+
+  const bytes = new Uint8Array(buffer, 0, 4);
+
+  // Build a human-readable version of the four bytes for the report.
+  let asText = '';
+  for (let i = 0; i < 4; i++) {
+    const byte = bytes[i];
+    // Printable ASCII range: show the character. Otherwise show hex.
+    asText += (byte >= 32 && byte <= 126)
+      ? String.fromCharCode(byte)
+      : '\\x' + byte.toString(16);
+  }
+
+  const isWoff2 = WOFF2_SIGNATURE.every(function (expected, i) {
+    return bytes[i] === expected;
+  });
+
+  return {
+    valid: isWoff2,
+    description: isWoff2
+      ? 'امضای فایل درست است (wOF2)'
+      : 'امضای فایل: <code>' + asText + '</code> — این یک فونت WOFF2 نیست'
+  };
+}
+
+/**
+ * Download one file and report status, size and — for fonts — validity.
+ *
+ * cache: 'reload' forces a fresh request past any cached copy, so we are
+ * always testing what is really on the server right now rather than what the
+ * browser saw earlier.
+ *
+ * @param {string} path  Relative path to test.
+ */
+async function checkFile(path) {
+  try {
+    const response = await fetch(path, { cache: 'reload' });
+
+    if (!response.ok) {
+      addResult(path,
+        '<span class="bad">پیدا نشد — کد خطا: ' + response.status + '</span>');
+      return;
+    }
+
+    const buffer = await response.arrayBuffer();
+    const kilobytes = (buffer.byteLength / 1024).toFixed(1);
+
+    // The CSS file is text, so a size and status check is enough for it.
+    if (path.endsWith('.css')) {
+      addResult(path,
+        '<span class="ok">موجود است</span> — حجم: ' + kilobytes + ' کیلوبایت');
+      return;
+    }
+
+    // Font files get the full signature inspection.
+    const signature = inspectSignature(buffer);
+    addResult(path,
+      '<span class="' + (signature.valid ? 'ok' : 'bad') + '">' +
+      signature.description + '</span><br>حجم: ' + kilobytes + ' کیلوبایت' +
+      '<br><small>یک فونت سالم معمولاً بین ۵۰ تا ۱۵۰ کیلوبایت است</small>');
+
+  } catch (error) {
+    addResult(path, '<span class="bad">خطا در دریافت: ' + error.message + '</span>');
+  }
+}
+
+/**
+ * Ask the browser to parse one font file and report its own error if it fails.
+ *
+ * This is the definitive test. The checks above confirm the bytes arrived
+ * intact; this confirms the browser can actually turn those bytes into a
+ * usable font, and surfaces the engine's real error message when it cannot.
+ */
+async function checkFontParsing() {
+  try {
+    // A throwaway family name, so this cannot collide with anything real.
+    const testFont = new FontFace(
+      'VazirmatnDiagnostic',
+      "url('fonts/Vazirmatn-Regular.woff2')"
+    );
+    await testFont.load();
+    addResult('تفسیر فونت توسط مرورگر',
+      '<span class="ok">موفق — فونت سالم است و مرورگر آن را می‌پذیرد</span>');
+  } catch (error) {
+    addResult('تفسیر فونت توسط مرورگر',
+      '<span class="bad">ناموفق</span><br>' + error.message);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Run every check in sequence, then clear the placeholder text.
+   ----------------------------------------------------------------------- */
+(async function runDiagnostics() {
+  document.getElementById('output').textContent = '';
+
+  for (const path of FILES_TO_CHECK) {
+    await checkFile(path);
+  }
+
+  await checkFontParsing();
+
+  addResult('آدرس صفحه', location.href);
+})();
+</script>
+
+</body>
+</html>
