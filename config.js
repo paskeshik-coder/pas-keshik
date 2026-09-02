@@ -84,31 +84,51 @@ const CONFIG = {
   LOGO_SCREEN: {
     /*
       Timings in milliseconds. 1000 = one second.
-      Total duration = FADE_IN + HOLD + FADE_OUT.
-      Current total is 1800ms, chosen to feel deliberate without making a
-      returning user wait. Lower HOLD if it starts to feel slow to you.
+      Total = FADE_IN + HOLD + FADE_OUT, currently 2100ms.
+      FADE_IN was raised from 400ms because at that speed the fade was hard to
+      perceive on a phone. Lower HOLD first if it starts to feel slow.
     */
-    FADE_IN_MS:  400,
-    HOLD_MS:    1000,
-    FADE_OUT_MS: 400,
+    FADE_IN_MS:  700,
+    HOLD_MS:     900,
+    FADE_OUT_MS: 500,
 
     /*
-      Real logo files. Upload your images into an assets/ folder, then set
-      USE_PLACEHOLDER to false. Nothing else needs to change.
+      Which logo to draw. Three choices:
 
-      Naming follows what the logo looks like, not the mode it appears in:
-      BLACK_LOGO shows on the white light-mode background,
-      WHITE_LOGO shows on the black dark-mode background.
+        'svg'   Use the built-in vector logo in illustrations.js. Recommended.
+                It is sharp at every size and colours itself automatically —
+                black on the light screen, white on the dark one — so a single
+                definition covers both modes.
+
+        'image' Use uploaded picture files. Create an assets/ folder, upload
+                your two images, and set the paths below. Use this only if you
+                want artwork the vector version cannot express, such as a
+                multi-colour or photographic mark.
+
+        'text'  Draw PLACEHOLDER_TEXT as a wordmark. Fallback only.
     */
-    USE_PLACEHOLDER: true,
+    MODE: 'svg',
+
+    // Used only when MODE is 'image'. Named for how the logo LOOKS, not the
+    // mode it appears in: the black logo sits on the white light-mode screen.
     BLACK_LOGO: 'assets/logo-black.png',
     WHITE_LOGO: 'assets/logo-white.png',
 
-    // Placeholder wordmark, used only while USE_PLACEHOLDER is true.
+    // Used only when MODE is 'text'.
     PLACEHOLDER_TEXT: 'پاس‌کشیک',
 
-    // Logo width as a percentage of screen width. Height scales automatically.
-    LOGO_WIDTH_PERCENT: 55
+    /*
+      Size limits. Both are applied together, so the logo is scaled to fit
+      inside whichever constraint binds first. Two limits rather than one
+      because a tall narrow mark and a wide flat mark need opposite rules —
+      this way a future logo of any shape still lands at a sensible size
+      without anyone having to work out which dimension matters.
+
+      MAX_WIDTH_PERCENT — share of screen width.
+      MAX_HEIGHT_VH     — share of screen height.
+    */
+    MAX_WIDTH_PERCENT: 50,
+    MAX_HEIGHT_VH: 34
   },
 
 
