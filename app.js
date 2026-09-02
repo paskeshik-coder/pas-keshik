@@ -21,72 +21,7 @@
  */
 
 
-/* ==========================================================================
-   ILLUSTRATIONS
-   Inline SVG artwork for the intro screens, kept together so artwork is
-   never tangled with layout code.
 
-   These are placeholders in the correct style and palette. To replace one,
-   overwrite its string with new SVG markup, or point the intro page at a
-   different name in config.js. Colours use currentColor and the brand
-   variables where possible so artwork follows the theme automatically.
-   ====================================================================== */
-const ILLUSTRATIONS = {
-
-  // Page 1: one figure handing a clipboard to another.
-  handover: `
-    <svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="120" cy="92" r="72" fill="var(--brand)" opacity=".07"/>
-      <!-- left figure -->
-      <circle cx="72" cy="58" r="17" fill="var(--brand)"/>
-      <path d="M46 142c0-16 12-28 26-28s26 12 26 28z" fill="var(--brand)"/>
-      <!-- right figure -->
-      <circle cx="168" cy="58" r="17" fill="var(--brand-light)"/>
-      <path d="M142 142c0-16 12-28 26-28s26 12 26 28z" fill="var(--brand-light)"/>
-      <!-- clipboard passing between them -->
-      <rect x="100" y="76" width="40" height="50" rx="4" fill="#fff"
-            stroke="var(--brand)" stroke-width="3"/>
-      <rect x="112" y="70" width="16" height="10" rx="2" fill="var(--accent)"/>
-      <line x1="109" y1="94"  x2="131" y2="94"  stroke="var(--brand)" stroke-width="3" stroke-linecap="round"/>
-      <line x1="109" y1="105" x2="131" y2="105" stroke="var(--brand)" stroke-width="3" stroke-linecap="round"/>
-      <line x1="109" y1="116" x2="123" y2="116" stroke="var(--brand)" stroke-width="3" stroke-linecap="round"/>
-    </svg>`,
-
-  // Page 2: a shield with a lock, two silhouettes held apart on either side.
-  privacy: `
-    <svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="120" cy="92" r="72" fill="var(--brand)" opacity=".07"/>
-      <!-- separated silhouettes -->
-      <circle cx="34" cy="76" r="13" fill="var(--brand)" opacity=".35"/>
-      <path d="M14 122c0-12 9-21 20-21s20 9 20 21z" fill="var(--brand)" opacity=".35"/>
-      <circle cx="206" cy="76" r="13" fill="var(--brand)" opacity=".35"/>
-      <path d="M186 122c0-12 9-21 20-21s20 9 20 21z" fill="var(--brand)" opacity=".35"/>
-      <!-- shield -->
-      <path d="M120 34l44 18v34c0 30-19 52-44 60-25-8-44-30-44-60V52z" fill="var(--brand)"/>
-      <!-- lock -->
-      <path d="M108 92v-9a12 12 0 0124 0v9" fill="none" stroke="#fff"
-            stroke-width="5" stroke-linecap="round"/>
-      <rect x="102" y="92" width="36" height="28" rx="4" fill="#fff"/>
-      <circle cx="120" cy="105" r="4" fill="var(--brand)"/>
-    </svg>`,
-
-  // Page 3: a figure stepping through a lit doorway.
-  doorway: `
-    <svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="120" cy="92" r="72" fill="var(--brand)" opacity=".07"/>
-      <!-- glow behind the opening -->
-      <rect x="86" y="34" width="68" height="112" rx="6" fill="var(--accent)" opacity=".30"/>
-      <!-- door frame -->
-      <rect x="86" y="34" width="68" height="112" rx="6" fill="none"
-            stroke="var(--brand)" stroke-width="5"/>
-      <!-- figure stepping through -->
-      <circle cx="120" cy="76" r="15" fill="var(--brand)"/>
-      <path d="M97 146c0-14 10-25 23-25s23 11 23 25z" fill="var(--brand)"/>
-      <!-- forward arrow -->
-      <path d="M164 90h28M182 80l10 10-10 10" fill="none" stroke="var(--brand)"
-            stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`
-};
 
 
 /* ==========================================================================
@@ -153,17 +88,26 @@ const Screens = {
   logo: {
     render() {
       const settings = CONFIG.LOGO_SCREEN;
+      const isDark   = (Theme.current === 'dark');
 
-      // Placeholder wordmark versus a real uploaded image. Swapping between
-      // them is a single boolean in config.js so no markup has to change when
-      // the real logo files arrive.
-      const mark = settings.USE_PLACEHOLDER
-        ? `<div class="logo-text">${Utils.escapeHtml(settings.PLACEHOLDER_TEXT)}</div>`
-        : `<img src="${Theme.current === 'dark' ? settings.WHITE_LOGO : settings.BLACK_LOGO}"
-                alt="${Utils.escapeHtml(CONFIG.GENERAL.APP_NAME)}"
-                style="width:100%">`;
+      // Three artwork sources, selected by MODE in config.js.
+      let mark;
+      if (settings.MODE === 'image') {
+        const src = isDark ? settings.WHITE_LOGO : settings.BLACK_LOGO;
+        mark = `<img src="${Utils.escapeHtml(src)}" alt=""
+                     style="width:100%;height:100%;object-fit:contain;display:block">`;
+      } else if (settings.MODE === 'text') {
+        mark = `<div class="logo-text">${Utils.escapeHtml(settings.PLACEHOLDER_TEXT)}</div>`;
+      } else {
+        // Default: the inline vector. Inlined rather than loaded as a file so
+        // there is no network request that could finish after the fade began.
+        mark = ART.LOGO;
+      }
 
-      return `<div id="logo-mark" style="max-width:${settings.LOGO_WIDTH_PERCENT}%">
+      // Both size limits are applied at once; the tighter one wins.
+      return `<div id="logo-mark"
+                   style="max-width:${settings.MAX_WIDTH_PERCENT}%;
+                          max-height:${settings.MAX_HEIGHT_VH}vh">
                 ${mark}
               </div>`;
     },
@@ -173,25 +117,38 @@ const Screens = {
       const screen   = document.getElementById('screen-logo');
       const mark     = document.getElementById('logo-mark');
 
-      // Pure white or pure black, per the specification — not the app's normal
-      // surface colours, which are slightly tinted.
+      // Pure white or pure black per the specification, not the app's normal
+      // surface colours. The text colour is what the inline SVG picks up
+      // through currentColor, which is how one logo serves both modes.
       const isDark = (Theme.current === 'dark');
       screen.style.background = isDark ? '#000000' : '#FFFFFF';
       mark.style.color        = isDark ? '#FFFFFF' : '#000000';
 
-      // Drive the fade durations from config rather than the stylesheet, so
-      // all four timing values live together in one place.
-      mark.style.transitionDuration = settings.FADE_IN_MS + 'ms';
+      /*
+        Committing the starting state before animating.
 
-      // A frame's delay before changing opacity. Without it the browser may
-      // batch the change with the initial paint and skip the transition
-      // entirely — the animation would simply not appear.
-      await Utils.wait(50);
+        Transitions only run when the browser has already painted the previous
+        value. This element was created milliseconds ago, so we disable the
+        transition, set opacity to 0, then read offsetWidth — a measurement the
+        browser cannot answer without laying the page out, which forces that
+        value to be committed. Only then is the transition re-enabled.
+
+        Reading offsetWidth purely for its side effect looks odd, which is why
+        it is worth saying plainly: the read is the point, not the number.
+      */
+      mark.style.transition = 'none';
+      mark.style.opacity    = '0';
+      void mark.offsetWidth;
+
+      mark.style.transition = `opacity ${settings.FADE_IN_MS}ms var(--ease)`;
+
+      // One painted frame, so the change below is seen as a change.
+      await Utils.nextFrame();
       mark.style.opacity = '1';
 
       await Utils.wait(settings.FADE_IN_MS + settings.HOLD_MS);
 
-      mark.style.transitionDuration = settings.FADE_OUT_MS + 'ms';
+      mark.style.transition = `opacity ${settings.FADE_OUT_MS}ms var(--ease)`;
       mark.style.opacity = '0';
 
       await Utils.wait(settings.FADE_OUT_MS);
