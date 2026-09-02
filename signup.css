@@ -1,0 +1,489 @@
+/*
+  ============================================================================
+  پاس‌کشیک — SIGN-UP WIZARD STYLES  (signup.css)
+  ----------------------------------------------------------------------------
+  Kept separate from styles.css because the wizard has a lot of one-off layout
+  — carousel, wheels, decorative arcs — that no other screen uses. Splitting it
+  keeps both files small enough to navigate and edit on a phone.
+
+  Colours are read from the CSS variables defined in styles.css, which app.js
+  fills from config.js. Nothing here hard-codes a brand colour.
+  ============================================================================
+*/
+
+/* ==========================================================================
+   LAYOUT
+   Three fixed bands: progress bar at top, scrolling content, navigation at
+   the bottom. Only the middle band scrolls, so the buttons are always
+   reachable without hunting for them.
+   ====================================================================== */
+#screen-signup {
+  background: var(--surface);
+  overflow: hidden;   /* the decorative arcs must clip at the screen edge */
+}
+
+.signup-progress-track {
+  height: 3px;
+  background: var(--divider);
+  flex-shrink: 0;
+  /* Sits below the phone's own status bar area inside Telegram. */
+  margin-top: env(safe-area-inset-top, 0);
+}
+
+.signup-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  width: 0;
+  transition: width .35s var(--ease);
+}
+
+.signup-body {
+  flex: 1;
+  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 24px 24px 8px;
+  /* Keeps the content above the decorative arcs. */
+  z-index: 1;
+}
+
+.signup-nav {
+  flex-shrink: 0;
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px calc(18px + env(safe-area-inset-bottom, 0));
+  background: var(--surface);
+  z-index: 2;
+}
+
+/* In RTL, forward is leftward: بعدی takes the left slot and the larger share
+   of the width, قبلی sits on the right as a quieter flat button. */
+.signup-nav .btn-next { flex: 2; order: 2; }
+.signup-nav .btn-back { flex: 1; order: 1; }
+
+/* A disabled بعدی stays visible but clearly inert, so it reads as
+   "not yet" rather than as a button that failed to respond. */
+.btn:disabled {
+  opacity: .38;
+  box-shadow: none;
+  cursor: default;
+}
+
+.signup-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--brand);
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.signup-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 22px;
+}
+
+
+/* ==========================================================================
+   DECORATIVE ARCS
+   A large brand circle bleeding off one corner, plus a small amber dot. The
+   corner rotates page by page. Purely decorative, so both are hidden from
+   assistive technology and cannot receive taps.
+   ====================================================================== */
+.signup-arc, .signup-dot {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  transition: all .45s var(--ease);
+}
+
+.signup-arc {
+  width: 190px;
+  height: 190px;
+  background: var(--brand);
+  opacity: .10;
+}
+
+.signup-dot {
+  width: 14px;
+  height: 14px;
+  background: var(--accent);
+}
+
+/* Roughly 55% of each circle sits off-screen, leaving a clean arc. */
+.arc-tl { top: -95px; left: -70px; }
+.arc-tr { top: -95px; right: -70px; }
+.arc-bl { bottom: -95px; left: -70px; }
+.arc-br { bottom: -95px; right: -70px; }
+
+.dot-tl { top: 112px; left: 34px; }
+.dot-tr { top: 112px; right: 34px; }
+.dot-bl { bottom: 112px; left: 34px; }
+.dot-br { bottom: 112px; right: 34px; }
+
+
+/* ==========================================================================
+   PRIVACY PANEL
+   A brand-coloured band along the bottom with a domed top edge. The elliptical
+   radius makes a shallow arc rather than a semicircle, which stays readable
+   at full width — a true semicircle would waste most of the screen height.
+   ====================================================================== */
+.privacy-dome {
+  flex-shrink: 0;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 150px 150px 0 0 / 46px 46px 0 0;
+  padding: 26px 32px 16px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.9;
+  z-index: 2;
+}
+
+
+/* ==========================================================================
+   TEXT FIELDS
+   ====================================================================== */
+.field { margin-bottom: 20px; }
+
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.field-input {
+  width: 100%;
+  height: 50px;
+  padding: 0 14px;
+  font-family: inherit;
+  font-size: 17px;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color .2s var(--ease), background-color .2s var(--ease);
+}
+
+.field-input:focus {
+  border-color: var(--brand);
+  background: var(--surface);
+}
+
+.field-input.invalid { border-color: var(--danger); }
+
+/* The hint slot is always present, and the error text replaces the hint in
+   place. Reserving the space stops the layout jumping when an error appears. */
+.field-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 5px;
+  min-height: 17px;
+}
+.field-hint.error { color: var(--danger); }
+
+
+/* ==========================================================================
+   PAGE 2 — MAJOR CAROUSEL
+   Horizontal scroll-snap. The side padding is what allows the first and last
+   cards to reach the centre; without it they would stop at the screen edge.
+   ====================================================================== */
+.major-track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding: 10px 19%;
+  gap: 14px;
+  scrollbar-width: none;
+}
+.major-track::-webkit-scrollbar { display: none; }
+
+.major-card {
+  flex: 0 0 62%;
+  scroll-snap-align: center;
+  background: var(--background);
+  border: 3px solid transparent;
+  border-radius: 16px;
+  padding: 26px 12px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  /* Scale and opacity are set by JavaScript from each card's distance to the
+     centre, so the transition here smooths that continuous change. */
+  transition: border-color .25s var(--ease), background-color .25s var(--ease);
+}
+
+.major-card .major-icon {
+  width: 74px;
+  height: 74px;
+  color: var(--brand);
+}
+.major-card .major-icon svg { width: 100%; height: 100%; }
+
+.major-card .major-name {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* The chosen card is ringed and tinted, with a tick in the corner. Colour
+   alone would be ambiguous next to the brand-coloured icons. */
+.major-card.selected {
+  border-color: var(--brand);
+  background: var(--surface);
+  position: relative;
+}
+
+.major-card.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  /* inset-inline-start follows text direction, so this lands on the correct
+     side automatically under RTL. */
+  inset-inline-start: 12px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+/* ==========================================================================
+   PAGE 3 — SCROLL WHEELS
+   Native scroll-snap gives real flick physics and momentum, which a
+   hand-written drag handler would only approximate.
+   ====================================================================== */
+.wheel-group { margin-bottom: 18px; }
+
+.wheel-caption {
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.wheel {
+  position: relative;
+  overflow: hidden;
+}
+
+/* The band marking the selected row. Placed behind the numbers and untappable
+   so it can never intercept a scroll gesture. */
+.wheel-band {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  border-radius: 10px;
+  background: var(--brand);
+  opacity: .10;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wheel-scroll {
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  position: relative;
+  z-index: 1;
+}
+.wheel-scroll::-webkit-scrollbar { display: none; }
+
+.wheel-item {
+  scroll-snap-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text-primary);
+  /* Scale and opacity come from JavaScript, based on distance from centre. */
+  transition: opacity .15s linear, transform .15s var(--ease);
+}
+
+/* Empty spacers above and below, so the first and last values can reach the
+   middle of the wheel instead of stopping at its edge. */
+.wheel-pad { flex-shrink: 0; }
+
+
+/* ==========================================================================
+   PAGE 4 — UNIVERSITY SEARCH
+   ====================================================================== */
+.uni-search-wrap { position: relative; margin-bottom: 14px; }
+
+.uni-search-wrap .field-input { padding-inline-start: 42px; }
+
+.uni-search-icon {
+  position: absolute;
+  inset-inline-start: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+  font-size: 17px;
+}
+
+.uni-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.uni-chip {
+  background: var(--accent);
+  color: #212121;
+  border-radius: 16px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.uni-results {
+  max-height: 46vh;
+  overflow-y: auto;
+  /* Momentum scrolling inside the list must not drag the page behind it. */
+  overscroll-behavior: contain;
+}
+
+.uni-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--background);
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  padding: 13px 14px;
+  margin-bottom: 8px;
+  transition: all .18s var(--ease);
+}
+
+.uni-item .uni-name { font-size: 15px; }
+
+/* The portion of the name matching the query. Bolded as well as coloured, so
+   it still reads as a match without relying on colour alone. */
+.uni-item mark {
+  background: none;
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.uni-item .uni-city {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 3px 10px;
+}
+
+.uni-item.selected {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+.uni-item.selected .uni-name,
+.uni-item.selected mark { color: #fff; }
+.uni-item.selected .uni-city {
+  background: rgba(255,255,255,.22);
+  color: #fff;
+}
+
+.uni-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  padding: 26px 0;
+}
+
+
+/* ==========================================================================
+   PAGE 5 — PHONE AND INVITE CODE
+   ====================================================================== */
+
+/* The prefix and the input share one bordered box so they read as a single
+   field, even though only one half is editable. */
+.phone-row {
+  display: flex;
+  align-items: center;
+  background: var(--background);
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color .2s var(--ease), background-color .2s var(--ease);
+}
+.phone-row.focused { border-color: var(--brand); background: var(--surface); }
+.phone-row.invalid { border-color: var(--danger); }
+
+.phone-prefix {
+  padding: 0 12px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-muted);
+  border-inline-end: 1px solid var(--divider);
+}
+
+.phone-row .field-input {
+  border: none;
+  background: transparent;
+  /* Phone numbers read left-to-right even inside an RTL layout. */
+  direction: ltr;
+  text-align: right;
+  letter-spacing: 2px;
+}
+
+/* Collapsible invite section: a row that expands to reveal the field, so the
+   final page does not open looking like two separate demands. */
+.invite-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 13px 2px;
+  color: var(--brand);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.invite-toggle .chevron {
+  transition: transform .25s var(--ease);
+  font-size: 12px;
+}
+.invite-toggle.open .chevron { transform: rotate(180deg); }
+
+/* Animating max-height rather than height, because the natural height of the
+   revealed content is not known in advance. */
+.invite-body {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s var(--ease);
+}
+.invite-body.open { max-height: 200px; }
+
+/* The invite code is Latin and case-sensitive, so it must not be
+   auto-capitalised and must read left-to-right. */
+#invite-input {
+  direction: ltr;
+  text-align: left;
+  letter-spacing: 3px;
+  font-size: 18px;
+}
