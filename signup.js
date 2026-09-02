@@ -155,7 +155,9 @@ const SignUp = {
         return `
           <h2 class="signup-title">${Utils.escapeHtml(page.TITLE)}</h2>
           <p class="signup-subtitle">${Utils.escapeHtml(page.SUBTITLE)}</p>
-          <div class="major-track" id="major-track">${cards}</div>
+          <div class="major-track" id="major-track">
+            <div class="major-spacer"></div>${cards}<div class="major-spacer"></div>
+          </div>
           <p class="signup-subtitle" style="margin-top:16px">
             ${Utils.escapeHtml(page.TAP_HINT)}
           </p>`;
@@ -193,18 +195,43 @@ const SignUp = {
           requestAnimationFrame(applyDepth);
         }, { passive: true });
 
-        cards.forEach(card => {
-          card.addEventListener('click', () => {
-            const rect  = card.getBoundingClientRect();
-            const tRect = track.getBoundingClientRect();
-            const offset = (rect.left + rect.width / 2)
-                         - (tRect.left + tRect.width / 2);
+        /**
+         * Which card is currently nearest the middle of the track.
+         *
+         * Asked as a comparison between cards rather than as an absolute
+         * distance threshold. A fixed threshold assumes a card can always
+         * settle exactly on centre, and any residue — a rounding difference,
+         * a spacer a pixel out — leaves the first and last cards permanently
+         * "not centred enough" and therefore permanently unselectable. Whoever
+         * is closest is always somebody, so this cannot get stuck.
+         *
+         * @returns {number}  Index into `cards`.
+         */
+        const centredIndex = () => {
+          const tRect = track.getBoundingClientRect();
+          const trackCentre = tRect.left + tRect.width / 2;
 
-            // A tap on an off-centre card means "bring this one over", not
-            // "choose it" — choosing something half off the screen is almost
-            // always a mis-tap. Only a centred card is actually selected.
-            if (Math.abs(offset) > rect.width * 0.25) {
-              track.scrollBy({ left: offset, behavior: 'smooth' });
+          let best = 0, bestDistance = Infinity;
+          cards.forEach((card, i) => {
+            const rect = card.getBoundingClientRect();
+            const distance = Math.abs((rect.left + rect.width / 2) - trackCentre);
+            if (distance < bestDistance) { bestDistance = distance; best = i; }
+          });
+          return best;
+        };
+
+        cards.forEach((card, index) => {
+          card.addEventListener('click', () => {
+            // Tapping a card that is off to one side means "bring this one
+            // over", not "choose it" — selecting something half off the screen
+            // is almost always a mis-tap.
+            if (index !== centredIndex()) {
+              const rect  = card.getBoundingClientRect();
+              const tRect = track.getBoundingClientRect();
+              track.scrollBy({
+                left: (rect.left + rect.width / 2) - (tRect.left + tRect.width / 2),
+                behavior: 'smooth'
+              });
               return;
             }
 
@@ -659,6 +686,63 @@ const SignUp = {
      WIZARD SHELL
      ==================================================================== */
 
+  /**
+   * Place the two decorative shapes for the current page.
+   *
+   * Both are positioned with top and left only. Corners are computed from the
+   * shape's size and how much of it should hang off the edge, rather than
+   * written out four times, so changing ARC_SIZE in config moves all four
+   * corners consistently instead of requiring four matching edits.
+   *
+   * Nothing is recreated here — the same two elements are repositioned, which
+   * is what lets CSS animate them across the screen.
+   */
+  moveDecorations() {
+    const decor = CONFIG.SIGNUP.DECOR;
+
+    /**
+     * Turn a corner code into top/left values.
+     *
+     * @param   {string} corner  't'/'b' then 'l'/'r', e.g. 'tl'.
+     * @param   {number} size    Diameter of the shape, in pixels.
+     * @param   {number} hideY   Fraction hidden past the top or bottom edge.
+     * @param   {number} hideX   Fraction hidden past the left or right edge.
+     * @returns {{top: string, left: string}}
+     */
+    const place = (corner, size, hideY, hideX) => {
+      const offsetY = size * hideY;
+      const offsetX = size * hideX;
+      // The visible sliver, used to sit the shape against the far edge.
+      const visibleY = size - offsetY;
+      const visibleX = size - offsetX;
+
+      return {
+        top:  corner[0] === 't' ? `${-offsetY}px` : `calc(100% - ${visibleY}px)`,
+        left: corner[1] === 'l' ? `${-offsetX}px` : `calc(100% - ${visibleX}px)`
+      };
+    };
+
+    const arc = document.getElementById('signup-arc');
+    const dot = document.getElementById('signup-dot');
+    if (!arc || !dot) return;
+
+    const arcAt = place(
+      decor.ARC_POSITIONS[this.pageIndex] || 'tl',
+      decor.ARC_SIZE, decor.ARC_HIDE_Y, decor.ARC_HIDE_X
+    );
+    arc.style.top  = arcAt.top;
+    arc.style.left = arcAt.left;
+
+    // The dot stays fully on screen, so its inset is given directly in pixels
+    // rather than as a fraction of its own size.
+    const dotCorner = decor.DOT_POSITIONS[this.pageIndex] || 'tr';
+    dot.style.top = dotCorner[0] === 't'
+      ? `${decor.DOT_INSET_Y}px`
+      : `calc(100% - ${decor.DOT_INSET_Y + decor.DOT_SIZE}px)`;
+    dot.style.left = dotCorner[1] === 'l'
+      ? `${decor.DOT_INSET_X}px`
+      : `calc(100% - ${decor.DOT_INSET_X + decor.DOT_SIZE}px)`;
+  },
   /** Reset and open the wizard at page one. */
   start() {
     this.data = {};
@@ -687,18 +771,24 @@ const SignUp = {
    * Only the body is replaced, not the whole screen, so the progress bar keeps
    * its width and animates smoothly from one page to the next.
    */
-  showPage() {
-    const page = this.PAGES[this.pageIndex];
-    const body = document.getElementById('signup-body');
+  async showPage(animate = true) {
+    const decor = CONFIG.SIGNUP.DECOR;
+    const page  = this.PAGES[this.pageIndex];
+    const body  = document.getElementById('signup-body');
     const isLastPage = (this.pageIndex === this.PAGES.length - 1);
 
-    // Decorative arc, in the corner assigned to this page.
-    const corner = CONFIG.SIGNUP.ARC_POSITIONS[this.pageIndex] || 'tl';
-    const decoration = `
-      <div class="signup-arc arc-${corner}"></div>
-      <div class="signup-dot dot-${corner}"></div>`;
+    // The motif starts travelling first and keeps going through the content
+    // swap, so the two shapes are still visibly in flight when the new page
+    // fades in. Starting them together would read as one combined transition.
+    this.moveDecorations();
 
-    body.innerHTML = decoration + page.render();
+    if (animate) {
+      body.style.transitionDuration = decor.CONTENT_FADE_OUT_MS + 'ms';
+      body.style.opacity = '0';
+      await Utils.wait(decor.CONTENT_FADE_OUT_MS);
+    }
+
+    body.innerHTML = page.render();
     body.scrollTop = 0;
     page.mount?.();
 
@@ -708,7 +798,7 @@ const SignUp = {
     dome.innerHTML = note ? `<p>${Utils.escapeHtml(note)}</p>` : '';
     dome.style.display = note ? '' : 'none';
 
-    // قبلی is absent rather than disabled on the first page: there is no
+    // قبلی is hidden rather than disabled on the first page: there is no
     // backward step to describe, so offering one would be misleading.
     const back = document.getElementById('signup-back');
     back.style.visibility = (this.pageIndex === 0) ? 'hidden' : 'visible';
@@ -719,6 +809,9 @@ const SignUp = {
 
     this.refreshNav();
     App.attachRipples(body);
+
+    body.style.transitionDuration = decor.CONTENT_FADE_IN_MS + 'ms';
+    body.style.opacity = '1';
   },
 
   /** Advance, or submit if this was the last page. */
@@ -793,10 +886,27 @@ const SignUp = {
  */
 const SignUpScreen = {
   render() {
+    const decor = CONFIG.SIGNUP.DECOR;
+
     return `
       <div class="signup-progress-track">
         <div class="signup-progress-fill" id="signup-progress"></div>
       </div>
+
+      <!-- The motif sits in the shell, as a sibling of the body rather than
+           inside it. Two consequences, both wanted: it survives every page
+           swap so its movement can be animated, and it cannot add to the
+           body's scrollable width the way it did when nested inside. -->
+      <div class="signup-decor signup-arc" id="signup-arc"
+           style="width:${decor.ARC_SIZE}px;height:${decor.ARC_SIZE}px;
+                  opacity:${decor.ARC_OPACITY};
+                  transition:top ${decor.ARC_MOVE_MS}ms var(--ease),
+                             left ${decor.ARC_MOVE_MS}ms var(--ease)"></div>
+      <div class="signup-decor signup-dot" id="signup-dot"
+           style="width:${decor.DOT_SIZE}px;height:${decor.DOT_SIZE}px;
+                  transition:top ${decor.DOT_MOVE_MS}ms var(--ease),
+                             left ${decor.DOT_MOVE_MS}ms var(--ease)"></div>
+
       <div class="signup-body" id="signup-body"></div>
       <div class="privacy-dome" id="signup-dome"></div>
       <div class="signup-nav">
@@ -813,6 +923,7 @@ const SignUpScreen = {
             .addEventListener('click', () => SignUp.next());
     document.getElementById('signup-back')
             .addEventListener('click', () => SignUp.back());
-    SignUp.showPage();
+    // First entry has nothing to fade out of, so it renders immediately.
+    SignUp.showPage(false);
   }
 };
