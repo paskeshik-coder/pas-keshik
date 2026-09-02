@@ -226,13 +226,15 @@ const Screens = {
 
       track.addEventListener('scroll', updateForScrollPosition, { passive: true });
 
-      startButton.addEventListener('click', () => {
-        // Sign-up does not exist yet. Announcing that plainly is better than
-        // a dead button that leaves you wondering whether it registered.
-        alert('صفحه ثبت‌نام در مرحله بعد ساخته می‌شود.');
-      });
+      startButton.addEventListener('click', () => App.go('signup'));
     }
-  }
+  },
+
+  /* ------------------------------------------------------------------------
+     SCREEN: SIGN-UP
+     Defined in signup.js, which is large enough to warrant its own file.
+     --------------------------------------------------------------------- */
+  signup: SignUpScreen
 
 };
 
