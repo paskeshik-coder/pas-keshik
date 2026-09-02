@@ -1,0 +1,327 @@
+/*
+  ============================================================================
+  پاس‌کشیک — DESIGN SYSTEM  (styles.css)
+  ----------------------------------------------------------------------------
+  Google Material Design 2015: solid colour surfaces, cards raised by real
+  shadows rather than borders, touch ripples, and a floating action button.
+
+  STRUCTURE
+    1. Variables      — colours injected from config.js at startup
+    2. Reset & base   — page-wide defaults
+    3. Components     — app bar, cards, buttons, inputs, ripple
+    4. Screens        — one clearly marked block per screen
+
+  Colours are never written literally below. They are read from the CSS
+  variables in part 1, which app.js fills in from CONFIG.COLORS. That is what
+  makes a single edit in config.js recolour the entire app, and what makes
+  dark mode a matter of swapping one set of values.
+  ============================================================================
+*/
+
+/* ==========================================================================
+   1. VARIABLES
+   Defaults here are placeholders only — app.js overwrites them on load from
+   CONFIG.COLORS. Editing colours here would have no effect; edit config.js.
+   ====================================================================== */
+:root {
+  --brand:        #01579B;
+  --brand-dark:   #013A69;
+  --brand-light:  #4F83CC;
+  --accent:       #FFC107;
+  --background:   #ECEFF1;
+  --surface:      #FFFFFF;
+  --text-primary: #212121;
+  --text-muted:   #6B7280;
+  --divider:      #E0E0E0;
+  --danger:       #C62828;
+  --success:      #2E7D32;
+
+  /* Material's standard elevation shadows, by height above the surface. */
+  --shadow-1: 0 1px 3px rgba(0,0,0,.20), 0 1px 2px rgba(0,0,0,.12);
+  --shadow-2: 0 3px 6px rgba(0,0,0,.16), 0 3px 6px rgba(0,0,0,.23);
+  --shadow-3: 0 10px 20px rgba(0,0,0,.19), 0 6px 6px rgba(0,0,0,.23);
+
+  --radius:      8px;
+  --appbar-height: 56px;   /* Material spec for a phone-sized top bar */
+
+  /* Material's standard easing curve. Movement accelerates, then eases out,
+     which reads as physical rather than mechanical. */
+  --ease: cubic-bezier(.4, 0, .2, 1);
+}
+
+
+/* ==========================================================================
+   2. RESET & BASE
+   ====================================================================== */
+
+/* border-box makes padding count inside an element's stated width, so a
+   full-width input with padding cannot overflow its container. */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;   /* a stray wide element must never scroll the page sideways */
+}
+
+body {
+  font-family: 'Vazirmatn', Tahoma, sans-serif;
+  background: var(--background);
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.8;     /* Persian script needs more leading than Latin */
+
+  /* Colour transitions make the dark-mode switch feel like a dimmer rather
+     than a hard cut. */
+  transition: background-color .3s var(--ease), color .3s var(--ease);
+
+  /* Suppress the grey tap flash Android draws over touched elements; the
+     ripple effect below replaces it. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Persian text should not be hyphenated or letter-spaced. */
+h1, h2, h3, p { margin: 0; }
+
+button {
+  font-family: inherit;   /* buttons ignore body font unless told otherwise */
+  font-size: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+/* Stop long unbroken strings — a pasted URL, a run of digits — from forcing
+   the layout wider than the screen. */
+p, span, div { overflow-wrap: break-word; }
+
+
+/* ==========================================================================
+   3. COMPONENTS
+   ====================================================================== */
+
+/* -- Ripple ---------------------------------------------------------------
+   Material's touch feedback: a circle expands from the point of contact and
+   fades. Applied by adding class="ripple" to any tappable element. The
+   circle itself is created in app.js at the coordinates of the tap.        */
+.ripple {
+  position: relative;
+  overflow: hidden;   /* clips the expanding circle to the element's shape */
+}
+
+.ripple-circle {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  background: rgba(255,255,255,.45);
+  animation: ripple-expand .55s var(--ease);
+  pointer-events: none;   /* the circle must never intercept the next tap */
+}
+
+/* Elements on light backgrounds need a dark ripple to be visible at all. */
+.ripple-dark .ripple-circle { background: rgba(0,0,0,.12); }
+
+@keyframes ripple-expand {
+  to { transform: scale(2.5); opacity: 0; }
+}
+
+/* -- Buttons -------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;      /* the smallest comfortable touch target on a phone */
+  padding: 0 24px;
+  border-radius: var(--radius);
+  font-weight: 500;
+  font-size: 15px;
+  transition: box-shadow .2s var(--ease), background-color .2s var(--ease);
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+  box-shadow: var(--shadow-1);
+}
+.btn-primary:active { box-shadow: var(--shadow-2); }
+
+.btn-accent {
+  background: var(--accent);
+  color: #212121;   /* dark text, because amber is too light for white */
+  box-shadow: var(--shadow-1);
+}
+
+/* Flat button: no fill, no shadow. For secondary or cancelling actions,
+   where visual weight would compete with the primary action. */
+.btn-flat {
+  background: transparent;
+  color: var(--brand);
+}
+
+.btn-block { display: flex; width: 100%; }
+
+/* -- Card ----------------------------------------------------------------- */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  padding: 16px;
+  margin-bottom: 12px;
+  transition: background-color .3s var(--ease);
+}
+
+
+/* ==========================================================================
+   4. SCREENS
+   ====================================================================== */
+
+/* -- Screen container -----------------------------------------------------
+   Every screen fills the viewport and stacks in the same place. Only one
+   carries the .active class at a time; the rest are hidden outright so they
+   cannot be reached by scrolling or by the keyboard.                        */
+.screen {
+  position: fixed;
+  inset: 0;              /* shorthand for top/right/bottom/left all zero */
+  display: none;
+  flex-direction: column;
+}
+.screen.active { display: flex; }
+
+
+/* -- SCREEN: LOGO ---------------------------------------------------------
+   Deliberately plain. A blank background and a centred mark, nothing else.
+   Background colour is set inline by app.js — pure white or pure black per
+   the specification, rather than the app's usual surface colours.           */
+#screen-logo {
+  align-items: center;
+  justify-content: center;
+  background: #FFFFFF;
+}
+
+#logo-mark {
+  opacity: 0;                     /* starts invisible; app.js fades it in */
+  transition: opacity .4s var(--ease);
+  max-width: 55%;
+  text-align: center;
+}
+
+/* Placeholder wordmark, shown until real logo images are uploaded. */
+#logo-mark .logo-text {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+
+/* -- SCREEN: INTRO --------------------------------------------------------
+   Three pages side by side inside a horizontally scrolling track. Native
+   scroll-snap does the paging, which gives correct momentum and rubber-band
+   behaviour for free — far better than reimplementing swipe in JavaScript.  */
+#screen-intro { background: var(--surface); }
+
+.intro-track {
+  display: flex;
+  flex: 1;                          /* take all vertical space above the dots */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;    /* always settle exactly on a page */
+  scroll-behavior: smooth;
+
+  /* Hide the horizontal scrollbar; the dots communicate position instead. */
+  scrollbar-width: none;
+}
+.intro-track::-webkit-scrollbar { display: none; }
+
+.intro-page {
+  flex: 0 0 100%;                   /* exactly one screen wide, never shrinks */
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 28px;
+  text-align: center;
+}
+
+.intro-illustration {
+  width: 78%;
+  max-width: 300px;
+  margin-bottom: 36px;
+}
+
+.intro-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--brand);
+  margin-bottom: 14px;
+}
+
+.intro-text {
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 2;
+  max-width: 340px;
+}
+
+/* Footer holding the dots and, on the last page, the start button. */
+.intro-footer {
+  padding: 20px 28px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.intro-dots { display: flex; gap: 9px; }
+
+.intro-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--divider);
+  transition: all .3s var(--ease);
+}
+
+/* The active dot stretches into a pill — clearer at a glance than a colour
+   change alone, and it survives being viewed in bright sunlight. */
+.intro-dot.active {
+  width: 22px;
+  border-radius: 4px;
+  background: var(--brand);
+}
+
+/* The start button occupies its slot from the beginning but is invisible and
+   untappable until the last page. Reserving the space stops the dots from
+   jumping upward when the button appears. */
+#intro-start {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .35s var(--ease);
+  width: 100%;
+  max-width: 320px;
+}
+#intro-start.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.intro-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  transition: opacity .35s var(--ease);
+}
+.intro-hint.hidden { opacity: 0; }
+
+
+/* -- Blocking notice ------------------------------------------------------
+   Full-screen message for when the app is opened outside Telegram.          */
+#screen-blocked {
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  text-align: center;
+  background: var(--background);
+}
