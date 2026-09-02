@@ -875,6 +875,8 @@ const SignUp = {
       'تلفن: ' + Utils.toPersianDigits(profile.phone) + '\n' +
       'کد دعوت: ' + (profile.inviteCode || 'ندارد')
     );
+
+    App.go('main');
   }
 
 };
