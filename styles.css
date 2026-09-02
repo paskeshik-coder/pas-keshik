@@ -209,6 +209,12 @@ p, span, div { overflow-wrap: break-word; }
 }
 
 /* Placeholder wordmark, shown until real logo images are uploaded. */
+/* The inline logo fills its container, which config.js has already sized. */
+#logo-mark svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 #logo-mark .logo-text {
   font-size: 40px;
   font-weight: 700;
