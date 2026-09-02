@@ -37,6 +37,52 @@ const ART = {
      the `illustration:` values there. Add a new entry here and reference it
      from config.js to introduce new artwork.
      --------------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------
+     MAJOR ICONS — one per رشته, shown on the sign-up carousel.
+     Referenced by the `icon` name in CONFIG.SIGNUP.MAJORS. Adding a major
+     means adding an entry here and one there; nothing else changes.
+     --------------------------------------------------------------------- */
+  MAJORS: {
+
+    // Stethoscope.
+    medicine: `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none"
+           stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M28 16v20a17 17 0 0034 0V16"/>
+        <path d="M22 16h12M56 16h12"/>
+        <path d="M45 53v10a19 19 0 0038 0v-6"/>
+        <circle cx="83" cy="43" r="10"/>
+      </svg>`,
+
+    // Nurse's cap with a heart.
+    nursing: `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none"
+           stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 62V30a4 4 0 014-4h56a4 4 0 014 4v32"/>
+        <path d="M12 62h76"/>
+        <path d="M50 34v14M43 41h14"/>
+        <path d="M32 74c8 8 28 8 36 0"/>
+      </svg>`,
+
+    // Parent cradling an infant.
+    midwifery: `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none"
+           stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="38" cy="26" r="13"/>
+        <path d="M17 84c0-16 9-27 21-27s21 11 21 27"/>
+        <circle cx="70" cy="55" r="9"/>
+        <path d="M56 84c0-9 6-15 14-15s14 6 14 15"/>
+      </svg>`,
+
+    // Mortar and pestle.
+    pharmacy: `
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none"
+           stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 48h56v6a28 28 0 01-28 28 28 28 0 01-28-28z"/>
+        <path d="M50 82v6M34 88h32"/>
+        <path d="M60 44L82 18a7 7 0 0110 10L64 48"/>
+      </svg>`
+  },
   INTRO: {
 
     // Page 1: one figure handing a clipboard to another.
