@@ -188,16 +188,56 @@ const CONFIG = {
     BACK_BUTTON: 'قبلی',
     SUBMIT_BUTTON: 'ثبت‌نام',
 
-    /*
-      Which corner the decorative blue arc occupies on each page, in order.
-      't'/'b' = top/bottom, 'l'/'r' = left/right. The arc moves around the
-      screen as the user advances, which gives the wizard a sense of travel
-      without adding anything they have to read.
+ /*
+      DECORATIVE MOTIF
+      A large translucent brand circle and a small solid amber dot, drifting
+      between corners as the user advances. They live in the wizard shell
+      rather than in the page body, so page content can fade while they keep
+      moving — the motif reads as one continuous object travelling across a
+      changing page, not as decoration that blinks out and reappears.
 
-      Pages 1 and 5 carry a privacy panel along the bottom edge, so their arcs
-      are placed at the top to stay clear of it.
+      Each has its own list of corners and its own travel time, so they never
+      look welded together.
+
+      Corner codes: first letter t/b = top/bottom, second l/r = left/right.
     */
-    ARC_POSITIONS: ['tl', 'tr', 'br', 'bl', 'tr'],
+    DECOR: {
+      // Corner per page, in page order.
+      ARC_POSITIONS: ['tl', 'tr', 'br', 'bl', 'tr'],
+      DOT_POSITIONS: ['tr', 'bl', 'tl', 'tr', 'tl'],
+
+      /*
+        The circle is deliberately large and mostly hidden. A 190px circle
+        half off the edge reads as a semicircle; a 280px circle with three
+        quarters hidden reads as a shallow slice, which is what was wanted.
+
+        HIDE_Y / HIDE_X are the fraction of the circle pushed off each edge.
+        Raise them to show less of it, lower them to show more.
+      */
+      ARC_SIZE: 280,
+      ARC_HIDE_Y: 0.74,
+      ARC_HIDE_X: 0.50,
+      ARC_OPACITY: 0.11,
+
+      // The dot sits fully on screen, measured in from the corner.
+      DOT_SIZE: 15,
+      DOT_INSET_X: 36,
+      DOT_INSET_Y: 104,
+
+      /*
+        Travel times, in milliseconds. Different values are the point: matched
+        durations would make the two shapes look like one rigid object being
+        dragged around. The dot arrives first and settles while the circle is
+        still moving.
+      */
+      ARC_MOVE_MS: 950,
+      DOT_MOVE_MS: 620,
+
+      // Page content fades out, swaps, fades in. Kept well short of the
+      // shorter travel time so the motif is visibly still moving underneath.
+      CONTENT_FADE_OUT_MS: 170,
+      CONTENT_FADE_IN_MS: 260
+    },
 
 
     /* ---- PAGE 1: name ---------------------------------------------------- */
