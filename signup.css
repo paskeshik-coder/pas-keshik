@@ -40,6 +40,16 @@
 .signup-body {
   flex: 1;
   overflow-y: auto;
+  /*
+    Must be stated explicitly. CSS computes a `visible` overflow to `auto` when
+    the other axis is not visible, so setting only overflow-y silently created
+    a horizontal scroll region — which is what pushed the page wider than the
+    screen and cut off the right edge of every field.
+  */
+  overflow-x: hidden;
+
+  /* Page content fades on navigation while the motif keeps moving. */
+  transition: opacity .18s var(--ease);
   position: relative;
   display: flex;
   flex-direction: column;
@@ -93,37 +103,25 @@
    corner rotates page by page. Purely decorative, so both are hidden from
    assistive technology and cannot receive taps.
    ====================================================================== */
-.signup-arc, .signup-dot {
+/*
+  Position is written as top/left only, never bottom/right. A transition
+  between `top: -200px` and `bottom: -60px` cannot animate, because the
+  browser has no way to interpolate a property being switched to `auto`.
+  Expressing every corner in the same two properties is what makes the
+  movement animate rather than jump.
+
+  Sizes and coordinates are set inline by signup.js from CONFIG.SIGNUP.DECOR,
+  so they stay in one place rather than being repeated here.
+*/
+.signup-decor {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
-  transition: all .45s var(--ease);
 }
 
-.signup-arc {
-  width: 190px;
-  height: 190px;
-  background: var(--brand);
-  opacity: .10;
-}
-
-.signup-dot {
-  width: 14px;
-  height: 14px;
-  background: var(--accent);
-}
-
-/* Roughly 55% of each circle sits off-screen, leaving a clean arc. */
-.arc-tl { top: -95px; left: -70px; }
-.arc-tr { top: -95px; right: -70px; }
-.arc-bl { bottom: -95px; left: -70px; }
-.arc-br { bottom: -95px; right: -70px; }
-
-.dot-tl { top: 112px; left: 34px; }
-.dot-tr { top: 112px; right: 34px; }
-.dot-bl { bottom: 112px; left: 34px; }
-.dot-br { bottom: 112px; right: 34px; }
+.signup-arc { background: var(--brand); }
+.signup-dot { background: var(--accent); }
 
 
 /* ==========================================================================
@@ -200,9 +198,23 @@
   display: flex;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  padding: 10px 19%;
+  padding: 10px 0;
   gap: 14px;
   scrollbar-width: none;
+}
+
+/*
+  Empty flex items at each end, standing in for what used to be container
+  padding. Browsers do not count a scroll container's trailing padding as part
+  of its scrollable width, so with padding the first and last cards could not
+  physically reach the centre — which also made them impossible to tap, since
+  only a centred card is selectable. Real elements are always counted.
+
+  Width is half the leftover space beside a card, so an end card lands dead
+  centre: (100% - 62%) / 2 = 19%.
+*/
+.major-spacer {
+  flex: 0 0 19%;
 }
 .major-track::-webkit-scrollbar { display: none; }
 
@@ -422,6 +434,12 @@
 .phone-row {
   display: flex;
   align-items: center;
+  /*
+    The row runs left-to-right inside an otherwise RTL page, so the fixed ۰۹
+    prefix sits at the left and the typed digits continue rightward — the order
+    an Iranian phone number is actually read in.
+  */
+  direction: ltr;
   background: var(--background);
   border: 2px solid transparent;
   border-radius: var(--radius);
@@ -445,9 +463,8 @@
 .phone-row .field-input {
   border: none;
   background: transparent;
-  /* Phone numbers read left-to-right even inside an RTL layout. */
-  direction: ltr;
-  text-align: right;
+  /* Digits continue from the prefix rather than filling from the far edge. */
+  text-align: left;
   letter-spacing: 2px;
 }
 
