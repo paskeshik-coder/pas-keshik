@@ -98,6 +98,45 @@ const Utils = {
     div.textContent = String(text ?? '');
     return div.innerHTML;
   },
+  /**
+   * Normalise Persian text so that visually identical characters compare equal.
+   *
+   * Persian and Arabic share a script but not a character set, and Android
+   * keyboards are inconsistent about which they emit. Arabic yeh (ي) and
+   * Persian yeh (ی) look the same on screen but are different characters, so a
+   * search for "پزشکی" would silently fail to match "پزشكي". Users would see
+   * a list that appears to contain their university and a search that refuses
+   * to find it, with nothing on screen explaining why.
+   *
+   * Every substitution here is one character for one character, and the
+   * zero-width non-joiner becomes an ordinary space rather than being deleted.
+   * Preserving length is deliberate: it means a match position found in the
+   * normalised text is also valid in the original, which is what allows the
+   * matched letters to be highlighted in the results list.
+   *
+   * @param   {string} text  Text as typed or as stored.
+   * @returns {string}       Normalised, same length, lower-cased.
+   */
+  foldPersian(text) {
+    return String(text ?? '')
+      .replace(/[يیۍێ]/g, 'ی')   // every yeh variant
+      .replace(/[كکڪ]/g,  'ک')   // every kaf variant
+      .replace(/[أإآٱا]/g, 'ا')   // alef with and without hamza
+      .replace(/[ؤو]/g,   'و')
+      .replace(/[ةه]/g,   'ه')
+      .replace(/\u200C/g, ' ')    // ZWNJ becomes a space, not nothing
+      .toLowerCase();
+  },
+
+  /**
+   * Strip everything that is not a digit, and normalise what remains to 0-9.
+   *
+   * @param   {string} text  Raw input.
+   * @returns {string}       Digits only, in English form.
+   */
+  digitsOnly(text) {
+    return this.toEnglishDigits(text).replace(/\D/g, '');
+  },
 
   /**
    * Read the saved user profile from this device.
