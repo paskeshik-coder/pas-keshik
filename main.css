@@ -1,0 +1,259 @@
+/*
+  ============================================================================
+  پاس‌کشیک — MAIN APP SHELL  (main.css)
+  ----------------------------------------------------------------------------
+  The frame every logged-in screen sits inside: header bar, sliding drawer,
+  and the content area between them.
+
+  Screen-specific styling lives elsewhere. This file owns only the furniture.
+  ============================================================================
+*/
+
+/* ==========================================================================
+   SHELL LAYOUT
+   Header pinned at the top, content scrolling beneath it. The header does not
+   scroll away, so the drawer is reachable from anywhere on any screen without
+   scrolling back up first.
+   ====================================================================== */
+#screen-main {
+  background: var(--background);
+  overflow: hidden;   /* the drawer parks off-screen and must not be reachable */
+}
+
+.app-header {
+  flex-shrink: 0;
+  background: var(--brand);
+  color: #fff;
+  box-shadow: var(--shadow-1);
+  padding-top: env(safe-area-inset-top, 0);
+  /* Above the scrim, so the header stays visible while the drawer is open. */
+  z-index: 30;
+}
+
+.app-header-row {
+  height: var(--appbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  gap: 4px;
+}
+
+/*
+  The menu button comes first in the markup, so under RTL it lands on the
+  right, with the screen name to its left. Written as document order rather
+  than as a float or absolute position, so it would mirror correctly if the
+  app were ever run left-to-right.
+*/
+.app-menu-btn {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.app-menu-btn svg { width: 24px; height: 24px; }
+
+.app-screen-title {
+  font-size: 19px;
+  font-weight: 500;
+  /* min-width:0 lets a flex child shrink below its content width, which is
+     what allows the ellipsis below to ever take effect. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+
+/* ==========================================================================
+   DRAWER
+   Slides in from the right, since the whole app is right-to-left and the menu
+   button lives on that side.
+   ====================================================================== */
+
+/*
+  The dimming layer behind the drawer. It also swallows taps on the page
+  underneath, which is what makes tapping outside close the drawer rather than
+  activating whatever happened to be there.
+*/
+.drawer-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  opacity: 0;
+  /* Not merely transparent but non-interactive, so it cannot block taps while
+     the drawer is closed. */
+  pointer-events: none;
+  z-index: 40;
+}
+.drawer-scrim.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 50;
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+  display: flex;
+  flex-direction: column;
+  /* Parked just past the right edge. Width comes from config via inline style. */
+  transform: translateX(100%);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/*
+  Transitions are switched on only after the first paint, and switched off
+  again while a finger is dragging. During a drag the position must follow the
+  finger exactly; a transition would add lag between touch and drawer.
+*/
+.drawer.animated, .drawer-scrim.animated {
+  transition: transform var(--drawer-open-ms, 260ms) var(--ease),
+              opacity var(--drawer-open-ms, 260ms) var(--ease);
+}
+
+.drawer.open { transform: translateX(0); }
+
+/* -- Drawer header --------------------------------------------------------- */
+.drawer-head {
+  background: var(--brand);
+  color: #fff;
+  padding: calc(env(safe-area-inset-top, 0) + 22px) 20px 20px;
+  flex-shrink: 0;
+}
+
+.drawer-brand {
+  font-size: 13px;
+  opacity: .75;
+  margin-bottom: 14px;
+}
+
+.drawer-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 27px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 12px;
+  /* Background colour is derived from the name and set inline. */
+}
+
+.drawer-name {
+  font-size: 17px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.drawer-likes {
+  font-size: 14px;
+  opacity: .85;
+}
+
+/* -- Drawer navigation ----------------------------------------------------- */
+.drawer-nav {
+  padding: 8px 0;
+  flex: 1;
+}
+
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 13px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+  text-align: start;
+  transition: background-color .15s var(--ease);
+}
+
+.drawer-item svg {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+/*
+  The active item is marked three ways at once — tinted background, brand text,
+  and a bar along the leading edge. Redundant on purpose: a colour change alone
+  is easy to miss at a glance, and invisible to anyone who cannot distinguish
+  these two colours.
+*/
+.drawer-item.active {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--brand);
+  position: relative;
+}
+.drawer-item.active svg { color: var(--brand); }
+
+.drawer-item.active::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  /* inset-inline-start resolves to the right under RTL. */
+  inset-inline-start: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--brand);
+}
+
+.drawer-divider {
+  height: 1px;
+  background: var(--divider);
+  margin: 8px 0;
+}
+
+/* Demo-only reset control, hidden entirely once the flag in config is off. */
+.drawer-reset {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 13px;
+  color: var(--danger);
+  text-align: start;
+}
+
+
+/* ==========================================================================
+   PLACEHOLDER SCREENS
+   Temporary, for nav items not yet built.
+   ====================================================================== */
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  gap: 12px;
+}
+.placeholder .placeholder-icon {
+  width: 56px;
+  height: 56px;
+  opacity: .35;
+}
+.placeholder .placeholder-icon svg { width: 100%; height: 100%; }
