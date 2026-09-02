@@ -230,11 +230,376 @@ const Screens = {
     }
   },
 
-  /* ------------------------------------------------------------------------
+/* ------------------------------------------------------------------------
      SCREEN: SIGN-UP
      Defined in signup.js, which is large enough to warrant its own file.
      --------------------------------------------------------------------- */
-  signup: SignUpScreen
+  signup: SignUpScreen,
+
+  /* ------------------------------------------------------------------------
+     SCREEN: MAIN APP
+     The shell holding the header, the drawer, and whichever sub-screen is
+     currently showing. Defined below in MainApp.
+     --------------------------------------------------------------------- */
+  main: {
+    render() { return MainApp.renderShell(); },
+    mount()  { MainApp.mount(); }
+  }
+
+};
+
+
+/* ==========================================================================
+   MAIN APP SHELL
+   Everything behind sign-up lives inside one screen container, because the
+   header and drawer persist while only the content between them changes.
+   Rebuilding the header on every navigation would make it flicker and would
+   throw away the drawer's open state.
+
+   Sub-screens register themselves in SCREENS below and are shown with
+   MainApp.show('id').
+   ====================================================================== */
+const MainApp = {
+
+  /** id of the visible sub-screen. */
+  current: null,
+
+  /** Whether the drawer is open. */
+  drawerOpen: false,
+
+  /**
+   * Sub-screens, keyed by the ids used in CONFIG.NAV.ITEMS.
+   * Each is an object with render() and optionally mount(), matching the
+   * convention used by the top-level screens.
+   *
+   * Screens not yet built fall back to a placeholder, so a drawer item can be
+   * added before its screen exists without producing a dead tap.
+   */
+  SCREENS: {},
+
+  /**
+   * Placeholder for a nav item whose screen has not been written yet.
+   *
+   * @param   {object} item  The CONFIG.NAV.ITEMS entry.
+   * @returns {object}       A screen object.
+   */
+  placeholderFor(item) {
+    return {
+      render() {
+        return `<div class="placeholder">
+                  <div class="placeholder-icon">${ART.NAV[item.icon] || ''}</div>
+                  <div>${Utils.escapeHtml(item.label)}</div>
+                  <div style="font-size:13px">این بخش در مرحله بعد ساخته می‌شود</div>
+                </div>`;
+      }
+    };
+  },
+
+
+  /* ======================================================================
+     SHELL MARKUP
+     ================================================================== */
+
+  renderShell() {
+    const drawerConfig = CONFIG.DRAWER;
+
+    return `
+      <div class="app-header">
+        <div class="app-header-row">
+          <button class="app-menu-btn ripple" id="app-menu-btn"
+                  aria-label="منو">${ART.NAV.menu}</button>
+          <div class="app-screen-title" id="app-screen-title"></div>
+        </div>
+      </div>
+
+      <div class="app-content" id="app-content"></div>
+
+      <div class="drawer-scrim" id="drawer-scrim"></div>
+
+      <div class="drawer" id="drawer"
+           style="width:${drawerConfig.WIDTH_PERCENT}%;
+                  max-width:${drawerConfig.MAX_WIDTH_PX}px">
+        <div class="drawer-head" id="drawer-head"></div>
+        <div class="drawer-nav" id="drawer-nav"></div>
+        <div id="drawer-footer"></div>
+      </div>`;
+  },
+
+  /**
+   * Fill the drawer's header from the saved profile.
+   *
+   * Stage 2 reads the profile from this device. Stage 3 replaces that with the
+   * record Supabase returns for the Telegram user; nothing else here changes.
+   */
+  renderDrawerHead() {
+    const profile = Utils.getLocalProfile() || {};
+    const fullName = [profile.firstName, profile.lastName]
+      .filter(Boolean).join(' ') || '—';
+
+    // The circle shows the family name's first letter, falling back to the
+    // given name so it is never blank.
+    const initial = (profile.lastName || profile.firstName || '؟').trim().charAt(0);
+    const color = Utils.colorFromText(fullName, CONFIG.NAV.AVATAR_COLORS);
+
+    // Likes are not implemented yet; zero is the honest value for a new user.
+    const likes = profile.likes || 0;
+
+    document.getElementById('drawer-head').innerHTML = `
+      <div class="drawer-brand">${Utils.escapeHtml(CONFIG.NAV.BRAND)}</div>
+      <div class="drawer-avatar" style="background:${color}">
+        ${Utils.escapeHtml(initial)}
+      </div>
+      <div class="drawer-name">${Utils.escapeHtml(fullName)}</div>
+      <div class="drawer-likes">
+        ${Utils.toPersianDigits(likes)} ${CONFIG.NAV.LIKES_SUFFIX}
+      </div>`;
+  },
+
+  /** Draw the drawer's navigation list, marking the current screen. */
+  renderDrawerNav() {
+    document.getElementById('drawer-nav').innerHTML = CONFIG.NAV.ITEMS.map(item => `
+      <button class="drawer-item ripple ripple-dark ${item.id === this.current ? 'active' : ''}"
+              data-id="${item.id}">
+        ${ART.NAV[item.icon] || ''}
+        <span>${Utils.escapeHtml(item.label)}</span>
+      </button>
+    `).join('');
+  },
+
+  /** Draw the demo-only reset control, if the flag allows it. */
+  renderDrawerFooter() {
+    const footer = document.getElementById('drawer-footer');
+
+    if (!CONFIG.DEMO.SHOW_RESET_BUTTON) {
+      footer.innerHTML = '';
+      return;
+    }
+
+    footer.innerHTML = `
+      <div class="drawer-divider"></div>
+      <button class="drawer-reset ripple ripple-dark" id="drawer-reset">
+        ${Utils.escapeHtml(CONFIG.DEMO.RESET_LABEL)}
+      </button>`;
+
+    document.getElementById('drawer-reset').addEventListener('click', () => {
+      if (!confirm(CONFIG.DEMO.RESET_CONFIRM)) return;
+      localStorage.removeItem('paskeshik_profile');
+      location.reload();
+    });
+  },
+
+
+  /* ======================================================================
+     NAVIGATION
+     ================================================================== */
+
+  /**
+   * Show a sub-screen inside the shell.
+   *
+   * @param {string} id  A key from SCREENS, matching a CONFIG.NAV.ITEMS id.
+   */
+  show(id) {
+    const item = CONFIG.NAV.ITEMS.find(i => i.id === id);
+    if (!item) { console.error('No such nav item:', id); return; }
+
+    this.current = id;
+
+    const screen = this.SCREENS[id] || this.placeholderFor(item);
+    const content = document.getElementById('app-content');
+
+    content.innerHTML = screen.render();
+    content.scrollTop = 0;
+    screen.mount?.();
+
+    document.getElementById('app-screen-title').textContent = item.title;
+
+    this.renderDrawerNav();
+    this.bindDrawerNav();
+    App.attachRipples(content);
+    App.attachRipples(document.getElementById('drawer'));
+  },
+
+  /** Attach handlers to the drawer's nav buttons after each redraw. */
+  bindDrawerNav() {
+    document.querySelectorAll('.drawer-item').forEach(button => {
+      button.addEventListener('click', () => {
+        const id = button.dataset.id;
+        this.closeDrawer();
+
+        // Wait out the closing animation before swapping the content. Doing
+        // both at once makes the drawer appear to slide over a screen that has
+        // already changed, which reads as a glitch rather than a transition.
+        setTimeout(() => {
+          if (id !== this.current) this.show(id);
+        }, CONFIG.DRAWER.CLOSE_MS);
+      });
+    });
+  },
+
+
+  /* ======================================================================
+     DRAWER
+     ================================================================== */
+
+  openDrawer() {
+    if (this.drawerOpen) return;
+    this.drawerOpen = true;
+
+    const drawer = document.getElementById('drawer');
+    const scrim  = document.getElementById('drawer-scrim');
+
+    drawer.style.setProperty('--drawer-open-ms', CONFIG.DRAWER.OPEN_MS + 'ms');
+    drawer.classList.add('animated', 'open');
+    scrim.classList.add('animated', 'open');
+    // Any transform left over from a drag must be cleared, or it would
+    // override the class and freeze the drawer mid-slide.
+    drawer.style.transform = '';
+
+    /*
+      Push a history entry so Android's back gesture closes the drawer instead
+      of leaving the app. The entry is marked, so the popstate handler can tell
+      this apart from any other backward navigation.
+    */
+    history.pushState({ drawer: true }, '');
+  },
+
+  /**
+   * Close the drawer.
+   *
+   * @param {boolean} fromHistory  True when called by the popstate handler,
+   *                               in which case the history entry is already
+   *                               gone and must not be popped again.
+   */
+  closeDrawer(fromHistory = false) {
+    if (!this.drawerOpen) return;
+    this.drawerOpen = false;
+
+    const drawer = document.getElementById('drawer');
+    const scrim  = document.getElementById('drawer-scrim');
+
+    drawer.style.setProperty('--drawer-open-ms', CONFIG.DRAWER.CLOSE_MS + 'ms');
+    drawer.classList.remove('open');
+    scrim.classList.remove('open');
+    drawer.style.transform = '';
+
+    // Discard the entry pushed when opening, so a later back gesture leaves
+    // the app as expected rather than doing nothing.
+    if (!fromHistory && history.state?.drawer) history.back();
+  },
+
+  /**
+   * Drag-to-open and drag-to-close.
+   *
+   * Two gestures share one set of handlers: a swipe starting within a narrow
+   * strip of the right edge opens the drawer, and a swipe anywhere on an open
+   * drawer closes it. In both cases the drawer tracks the finger directly,
+   * with transitions switched off for the duration — a transition during a
+   * drag puts the drawer behind the finger, which feels broken.
+   */
+  bindDrawerGestures() {
+    const drawer = document.getElementById('drawer');
+    const scrim  = document.getElementById('drawer-scrim');
+    const screen = document.getElementById('screen-main');
+
+    let startX = 0;
+    let dragging = false;
+    let openingGesture = false;
+
+    screen.addEventListener('touchstart', event => {
+      const touch = event.touches[0];
+      const fromRightEdge =
+        touch.clientX > window.innerWidth - CONFIG.DRAWER.EDGE_ZONE_PX;
+
+      if (!this.drawerOpen && fromRightEdge) {
+        dragging = true;
+        openingGesture = true;
+      } else if (this.drawerOpen) {
+        dragging = true;
+        openingGesture = false;
+      } else {
+        return;
+      }
+
+      startX = touch.clientX;
+      drawer.classList.remove('animated');
+      scrim.classList.remove('animated');
+    }, { passive: true });
+
+    screen.addEventListener('touchmove', event => {
+      if (!dragging) return;
+
+      const width = drawer.offsetWidth;
+      // Rightward movement is positive. Opening drags leftward (negative),
+      // closing drags rightward (positive).
+      const moved = event.touches[0].clientX - startX;
+
+      // How far the drawer is pulled out, from 0 (hidden) to 1 (fully open).
+      const progress = openingGesture
+        ? Math.min(1, Math.max(0, -moved / width))
+        : Math.min(1, Math.max(0, 1 - moved / width));
+
+      drawer.style.transform = `translateX(${(1 - progress) * 100}%)`;
+      scrim.style.opacity = String(progress);
+      scrim.style.pointerEvents = progress > 0 ? 'auto' : 'none';
+    }, { passive: true });
+
+    screen.addEventListener('touchend', event => {
+      if (!dragging) return;
+      dragging = false;
+
+      const width = drawer.offsetWidth;
+      const moved = (event.changedTouches[0].clientX) - startX;
+      const progress = openingGesture
+        ? Math.min(1, Math.max(0, -moved / width))
+        : Math.min(1, Math.max(0, 1 - moved / width));
+
+      // Clear the inline values so the open/closed classes take over again.
+      drawer.style.transform = '';
+      scrim.style.opacity = '';
+      scrim.style.pointerEvents = '';
+      drawer.classList.add('animated');
+      scrim.classList.add('animated');
+
+      // Past the commit point the gesture completes; short of it, it snaps
+      // back to wherever it started.
+      const committed = progress > CONFIG.DRAWER.COMMIT_FRACTION;
+
+      if (openingGesture) {
+        // drawerOpen is still false here, so this must be forced rather than
+        // routed through openDrawer's early return.
+        if (committed) { this.drawerOpen = false; this.openDrawer(); }
+        else           { this.drawerOpen = true;  this.closeDrawer(); }
+      } else {
+        if (committed) { this.drawerOpen = true;  this.closeDrawer(); }
+        else           { this.drawerOpen = false; this.openDrawer(); }
+      }
+    }, { passive: true });
+  },
+
+
+  /* ======================================================================
+     STARTUP
+     ================================================================== */
+
+  mount() {
+    this.renderDrawerHead();
+    this.renderDrawerFooter();
+
+    document.getElementById('app-menu-btn')
+            .addEventListener('click', () => this.openDrawer());
+
+    document.getElementById('drawer-scrim')
+            .addEventListener('click', () => this.closeDrawer());
+
+    this.bindDrawerGestures();
+
+    // Android back gesture, and the browser back button, close an open drawer.
+    window.addEventListener('popstate', () => {
+      if (this.drawerOpen) this.closeDrawer(true);
+    });
+
+    this.show(CONFIG.NAV.DEFAULT);
+  }
 
 };
 
@@ -283,12 +648,7 @@ const App = {
   goToStartScreen() {
     const isNewUser = CONFIG.DEMO.ALWAYS_SHOW_INTRO || !Utils.getLocalProfile();
 
-    if (isNewUser) {
-      this.go('intro');
-    } else {
-      // Main app arrives in a later slice.
-      this.go('intro');
-    }
+  this.go(isNewUser ? 'intro' : 'main');
   },
 
   /**
