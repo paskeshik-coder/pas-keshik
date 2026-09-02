@@ -32,9 +32,26 @@ const CONFIG = {
      the real backend exists in Stage 3.
      ====================================================================== */
   DEMO: {
-    // true  = intro screens appear on every single load (useful while designing)
-    // false = intro appears only for someone with no saved profile (real behaviour)
-    ALWAYS_SHOW_INTRO: true,
+    /*
+      true  = intro screens appear on every load, useful while designing them
+      false = intro appears only for someone with no saved profile
+
+      Set this to false to test the returning-user path: a saved profile then
+      takes you straight to the main app, and the reset button in the drawer
+      puts you back at the intro.
+    */
+    ALWAYS_SHOW_INTRO: false,
+
+    /*
+      Shows a "clear my data" button at the foot of the drawer. It deletes the
+      locally saved profile so the sign-up flow can be run again without
+      clearing browser data by hand.
+
+      Set to false before this ever reaches real users.
+    */
+    SHOW_RESET_BUTTON: true,
+    RESET_LABEL: 'پاک کردن اطلاعات (فقط برای تست)',
+    RESET_CONFIRM: 'اطلاعات ذخیره‌شده روی این دستگاه پاک شود؟',
 
     // true = skip straight past the logo animation. Saves you 2 seconds on
     // every reload while we are iterating. Set to false to see the real thing.
