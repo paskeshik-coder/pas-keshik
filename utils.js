@@ -61,6 +61,22 @@ const Utils = {
   wait(milliseconds) {
     return new Promise(resolve => setTimeout(resolve, milliseconds));
   },
+  /**
+   * Wait until the browser has actually painted a frame.
+   *
+   * Needed before starting a CSS transition on a freshly created element. A
+   * plain setTimeout is not reliable here: if the browser has not yet painted
+   * the element's starting state, it sees only the final value and skips the
+   * animation entirely — the element simply appears. Two nested frame requests
+   * guarantee one real paint has happened in between.
+   *
+   * @returns {Promise}  Resolves after the next painted frame.
+   */
+  nextFrame() {
+    return new Promise(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))
+    );
+  },
 
   /**
    * Escape text before inserting it into HTML.
