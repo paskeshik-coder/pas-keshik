@@ -137,6 +137,33 @@ const Utils = {
   digitsOnly(text) {
     return this.toEnglishDigits(text).replace(/\D/g, '');
   },
+  /**
+   * Pick a stable colour for someone's avatar from their name.
+   *
+   * The same name must always produce the same colour — an avatar that changed
+   * shade between screens would read as a different person. So the colour is
+   * derived from the text rather than assigned at random or stored.
+   *
+   * The hash is the standard multiply-by-31 string hash. It has no security
+   * purpose whatsoever; it only needs to spread similar names across different
+   * buckets, which it does well enough for a list of colours this short.
+   *
+   * @param   {string} text     Usually the user's full name.
+   * @param   {string[]} palette Colours to choose between.
+   * @returns {string}          One colour from the palette.
+   */
+  colorFromText(text, palette) {
+    let hash = 0;
+    const source = String(text || '?');
+
+    for (let i = 0; i < source.length; i++) {
+      // |0 keeps the running value a 32-bit integer instead of drifting into
+      // floating point, where large values lose their low bits.
+      hash = (hash * 31 + source.charCodeAt(i)) | 0;
+    }
+
+    return palette[Math.abs(hash) % palette.length];
+  },
 
   /**
    * Read the saved user profile from this device.
