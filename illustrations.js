@@ -42,6 +42,49 @@ const ART = {
      Referenced by the `icon` name in CONFIG.SIGNUP.MAJORS. Adding a major
      means adding an entry here and one there; nothing else changes.
      --------------------------------------------------------------------- */
+  /* ------------------------------------------------------------------------
+     NAV ICONS — one per drawer item.
+     Drawn as strokes in currentColor so they take the drawer's text colour and
+     shift automatically between the active and inactive states, and between
+     light and dark mode. Emoji were the alternative and were rejected: they
+     ignore text colour entirely and render differently on every Android build.
+     --------------------------------------------------------------------- */
+  NAV: {
+    search: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>`,
+
+    clipboard: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 3h6v3H9z"/>
+      <path d="M15 4.5h2.5A1.5 1.5 0 0119 6v13a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 015 19V6a1.5 1.5 0 011.5-1.5H9"/>
+      <path d="M8.5 11h7M8.5 15h4.5"/></svg>`,
+
+    briefcase: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="7.5" width="18" height="12.5" rx="2"/>
+      <path d="M9 7.5V6a2 2 0 012-2h2a2 2 0 012 2v1.5"/>
+      <path d="M3 12.5h18"/></svg>`,
+
+    ticket: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 8.5V6.5h16v2a2.5 2.5 0 000 5v2H4v-2a2.5 2.5 0 000-5z"/>
+      <path d="M13 6.5v1.5M13 11v2M13 15.5v1.5"/></svg>`,
+
+    mail: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="5.5" width="18" height="13" rx="2"/>
+      <path d="M3.5 7l8.5 6 8.5-6"/></svg>`,
+
+    gear: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3.2"/>
+      <path d="M12 2.5l1.4 2.6 2.9-.5.5 2.9 2.6 1.4-1.6 2.5 1.6 2.5-2.6 1.4-.5 2.9-2.9-.5L12 21.5l-1.4-2.6-2.9.5-.5-2.9-2.6-1.4L6.2 12 4.6 9.5l2.6-1.4.5-2.9 2.9.5z"/></svg>`,
+
+    menu: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round">
+      <path d="M4 7h16M4 12h16M4 17h16"/></svg>`
+  },
   MAJORS: {
 
     // Stethoscope.
