@@ -35,106 +35,116 @@ const DemoData = {
   /**
    * Generate the demo board.
    *
-   * Requests are scoped to the signed-in user's city and رشته, exactly as the
-   * real query will be. City and major are read from the saved profile so the
-   * board is populated whatever was chosen at sign-up — a fixed city would
-   * leave most testers looking at an empty screen.
+   * Requests are generated for EVERY رشته, not just the signed-in user's, and
+   * filtered down on read. That mirrors what the real query does and makes the
+   * scoping testable: change your رشته and the board genuinely changes,
+   * rather than the same rows being relabelled.
    *
-   * @returns {object[]}  Request records.
+   * Places are chosen to suit each رشته — a pharmacy shift belongs to a
+   * pharmacy student and would never appear on a medical board.
+   *
+   * @returns {object[]}  Request records across all majors.
    */
   build() {
     const profile = Utils.getLocalProfile() || {};
     const city = profile.city || 'تهران';
 
     // Universities in the user's city, so the university filter has something
-    // meaningful to filter between.
+    // real to filter between.
     const local = CONFIG.SIGNUP.PAGE_UNIVERSITY.UNIVERSITIES
       .filter(u => u.city === city);
-    const uni = i => (local[i % local.length] || local[0] || { id: '?', name: '؟' });
+    const pool = local.length ? local : [{ id: 'demo', name: 'دانشگاه نمونه' }];
+    const uni = i => pool[i % pool.length];
 
-    return [
-      {
-        id: 'req-1',
-        ownerId: 'other-1',
-        universityId: uni(0).id,
-        universityName: uni(0).name,
-        ward: 'emergency',
-        place: 'بیمارستان امام خمینی (ره)',
-        startsAt: this.at(3, 8),
-        endsAt:   this.at(3, 20),
-        createdAt: this.at(-1, 14),
-        lowestBid: 450000,
-        // A boost expiring in the future puts this above everything else.
-        boostedUntil: this.at(2, 12)
+    /*
+      Per-major templates. Each major gets five requests: one boosted, one
+      owned by the signed-in user, one with no bids yet, and two ordinary ones.
+      That covers every card state on whichever major is chosen at sign-up,
+      instead of only on medicine.
+
+      `ward` is null for majors that do not use wards, matching what the real
+      request form will produce.
+    */
+    const byMajor = {
+      medicine: {
+        wards: ['emergency', 'icu', 'internal', 'surgery', 'pediatrics'],
+        places: [
+          'بیمارستان امام خمینی (ره)',
+          'بیمارستان شریعتی',
+          'بیمارستان سینا',
+          'بیمارستان طالقانی',
+          'بیمارستان کودکان'
+        ]
       },
-      {
-        id: 'req-2',
-        ownerId: 'other-2',
-        universityId: uni(1).id,
-        universityName: uni(1).name,
-        ward: 'icu',
-        place: 'بیمارستان شریعتی',
-        startsAt: this.at(1, 20),
-        endsAt:   this.at(2, 8),
-        createdAt: this.at(0, 9),
-        lowestBid: 800000,
-        boostedUntil: null
+      nursing: {
+        wards: ['icu', 'emergency', 'ccu', 'internal', 'surgery'],
+        places: [
+          'بیمارستان قلب شهید رجایی',
+          'بیمارستان میلاد',
+          'بیمارستان فیروزگر',
+          'بیمارستان لقمان حکیم',
+          'بیمارستان رسول اکرم'
+        ]
       },
-      {
-        id: 'req-3',
-        ownerId: 'other-3',
-        universityId: uni(0).id,
-        universityName: uni(0).name,
-        ward: 'internal',
-        place: 'بیمارستان سینا',
-        startsAt: this.at(5, 8),
-        endsAt:   this.at(5, 14),
-        createdAt: this.at(-2, 11),
-        // No bids yet, so the lowest-bid line is hidden on this card.
-        lowestBid: null,
-        boostedUntil: null
+      midwifery: {
+        wards: [null, null, null, null, null],
+        places: [
+          'بیمارستان زنان مهدیه',
+          'زایشگاه شهید اکبرآبادی',
+          'بیمارستان صارم',
+          'درمانگاه مادر و کودک',
+          'بیمارستان آرش'
+        ]
       },
-      {
-        id: 'req-4',
-        // Owned by the signed-in user, to exercise the own-request state.
-        ownerId: 'me',
-        universityId: uni(2).id,
-        universityName: uni(2).name,
-        ward: 'surgery',
-        place: 'بیمارستان دکتر شریعتی',
-        startsAt: this.at(4, 14),
-        endsAt:   this.at(4, 22),
-        createdAt: this.at(-1, 8),
-        lowestBid: 620000,
-        boostedUntil: null
-      },
-      {
-        id: 'req-5',
-        ownerId: 'other-4',
-        universityId: uni(1).id,
-        universityName: uni(1).name,
-        ward: 'pediatrics',
-        place: 'بیمارستان کودکان',
-        startsAt: this.at(2, 8),
-        endsAt:   this.at(2, 20),
-        createdAt: this.at(-3, 16),
-        lowestBid: 1250000,
-        boostedUntil: null
-      },
-      {
-        id: 'req-6',
-        ownerId: 'other-5',
-        universityId: uni(0).id,
-        universityName: uni(0).name,
-        ward: 'emergency',
-        place: 'داروخانه جمعیت هلال احمر',
-        startsAt: this.at(6, 16),
-        endsAt:   this.at(6, 23),
-        createdAt: this.at(-4, 10),
-        lowestBid: null,
-        boostedUntil: null
+      pharmacy: {
+        wards: [null, null, null, null, null],
+        places: [
+          'داروخانه جمعیت هلال احمر',
+          'داروخانه شبانه‌روزی ۲۹ فروردین',
+          'داروخانه بیمارستان دی',
+          'داروخانه دکتر رضایی',
+          'داروخانه مرکزی'
+        ]
       }
+    };
+
+    /*
+      Shape shared by all majors. Kept as one table so a change to the timing
+      or bid pattern applies everywhere, rather than being repeated four times
+      and drifting apart.
+
+      Index 0 is boosted, index 3 is owned by the user, index 2 has no bids.
+    */
+    const shape = [
+      { startDay: 3, startHour: 8,  endDay: 3, endHour: 20, createdDay: -1, lowestBid: 450000,  boost: true,  own: false },
+      { startDay: 1, startHour: 20, endDay: 2, endHour: 8,  createdDay: 0,  lowestBid: 800000,  boost: false, own: false },
+      { startDay: 5, startHour: 8,  endDay: 5, endHour: 14, createdDay: -2, lowestBid: null,    boost: false, own: false },
+      { startDay: 4, startHour: 14, endDay: 4, endHour: 22, createdDay: -1, lowestBid: 620000,  boost: false, own: true  },
+      { startDay: 2, startHour: 8,  endDay: 2, endHour: 20, createdDay: -3, lowestBid: 1250000, boost: false, own: false }
     ];
+
+    const requests = [];
+
+    for (const [majorId, content] of Object.entries(byMajor)) {
+      shape.forEach((row, i) => {
+        requests.push({
+          id: `${majorId}-${i}`,
+          major: majorId,
+          ownerId: row.own ? 'me' : `other-${majorId}-${i}`,
+          universityId: uni(i).id,
+          universityName: uni(i).name,
+          ward: content.wards[i],
+          place: content.places[i],
+          startsAt: this.at(row.startDay, row.startHour),
+          endsAt:   this.at(row.endDay, row.endHour),
+          createdAt: this.at(row.createdDay, 10),
+          lowestBid: row.lowestBid,
+          boostedUntil: row.boost ? this.at(2, 12) : null
+        });
+      });
+    }
+
+    return requests;
   }
 
 };
@@ -159,7 +169,7 @@ const DemoStore = {
    * The signed-in user's id.
    *
    * In Stage 3 this becomes the Telegram numeric user id. The demo uses a
-   * fixed string, matching the ownerId on the request seeded as the user's own.
+   * fixed string, matching the ownerId on the requests seeded as the user's.
    */
   currentUserId() { return 'me'; },
 
@@ -177,8 +187,25 @@ const DemoStore = {
     if (!this._requests) this._requests = DemoData.build();
 
     const now = Date.now();
+    const profile = Utils.getLocalProfile() || {};
 
     return [...this._requests]
+      /*
+        SCOPE, applied before anything else.
+
+        A user only ever sees requests from their own رشته. This is not a
+        filter the user can widen — a pharmacy student cannot cover a nursing
+        shift, so those requests are not theirs to see. City scoping is
+        implicit here because every generated request already uses a
+        university from the user's own city.
+
+        In Stage 3 this becomes a WHERE clause on the server. Doing it there
+        rather than in the browser matters: a client-side scope is a display
+        convention, not a boundary, and could be lifted by anyone willing to
+        edit the page.
+      */
+      .filter(request => !profile.major || request.major === profile.major)
+
       // A request disappears once its shift has started or a week has passed,
       // whichever comes first. Computed on read, so nothing has to be
       // scheduled and nothing can silently stop running.
