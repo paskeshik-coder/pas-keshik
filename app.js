@@ -501,6 +501,14 @@ const MainApp = {
     const scrim  = document.getElementById('drawer-scrim');
     const screen = document.getElementById('screen-main');
 
+    /*
+      When edge-swipe is disabled, only the closing half of the gesture is
+      bound. Dragging an already-open drawer shut still works, because that
+      gesture starts on the drawer itself rather than at the screen edge, so
+      the system back gesture never sees it.
+    */
+    const edgeSwipeEnabled = CONFIG.DRAWER.EDGE_SWIPE_ENABLED;
+
     let startX = 0;
     let dragging = false;
     let openingGesture = false;
@@ -510,7 +518,7 @@ const MainApp = {
       const fromRightEdge =
         touch.clientX > window.innerWidth - CONFIG.DRAWER.EDGE_ZONE_PX;
 
-      if (!this.drawerOpen && fromRightEdge) {
+      if (!this.drawerOpen && fromRightEdge && edgeSwipeEnabled) {
         dragging = true;
         openingGesture = true;
       } else if (this.drawerOpen) {
