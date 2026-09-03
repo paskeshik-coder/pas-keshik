@@ -13,6 +13,19 @@
  * ORDERING is decided by the data layer, never here. The screen renders the
  * order it is given. If the client chose, a technical user could promote their
  * own request to the top by editing the page.
+ *
+ * EVENT HANDLING — one delegated listener, attached once
+ * Every tap on this screen is handled by a single listener on #app-content,
+ * which is the one element that survives every redraw. Nothing is ever
+ * re-bound.
+ *
+ * This matters because both earlier approaches failed in ways that were hard
+ * to see. Attaching handlers inside the sheet-opening function accumulated
+ * them, so one tap fired several. Re-binding buttons after each redraw left
+ * their working state dependent on which redraw ran last. Delegation removes
+ * both: handlers are attached to an ancestor that is never replaced, and the
+ * markup they act on is identified by data attributes rather than by object
+ * references that go stale.
  * ============================================================================
  */
 
@@ -23,6 +36,9 @@ const SearchScreen = {
 
   /** Set once per mount, from the saved profile. */
   profile: null,
+
+  /** Guard so the delegated listener is attached exactly once per page load. */
+  _bound: false,
 
 
   /* ======================================================================
@@ -91,7 +107,7 @@ const SearchScreen = {
 
     const button = (id, label, narrowed) => `
       <button class="filter-btn ripple ripple-dark ${narrowed ? 'narrowed' : ''}"
-              data-filter="${id}">
+              data-filter-open="${id}">
         <span class="filter-value">${Utils.escapeHtml(label)}</span>
         <span class="filter-caret">▼</span>
       </button>`;
@@ -219,6 +235,13 @@ const SearchScreen = {
     App.attachRipples(list);
   },
 
+  /** Redraw both halves of the screen after a filter change. */
+  refresh() {
+    this.renderFilters();
+    this.renderList();
+    App.attachRipples(document.getElementById('search-filters'));
+  },
+
 
   /* ======================================================================
      BOTTOM SHEET
@@ -240,6 +263,10 @@ const SearchScreen = {
   /**
    * Show a picker for one of the filters.
    *
+   * Only draws the sheet. The taps inside it are handled by the delegated
+   * listener, which reads from the markup rather than from anything this
+   * function leaves behind.
+   *
    * @param {string} which  'university' or 'ward'.
    */
   openFilterSheet(which) {
@@ -258,18 +285,10 @@ const SearchScreen = {
 
     const rows = [{ id: '', label: allLabel }, ...options].map(option => {
       const selected = (this.filters[which] || '') === option.id;
-      /*
-        Each row carries which filter it belongs to. The alternative — a
-        listener that closes over `which` — has to be attached each time the
-        sheet opens, and since the sheet element is reused rather than
-        recreated, those listeners accumulate. After opening both pickers
-        once, a single tap fired both handlers: choosing a ward also wrote
-        that ward's id into the university filter, which matched nothing and
-        emptied the board. Naming the filter in the markup lets one permanent
-        listener serve every sheet.
-      */
+      // Each row names the filter it belongs to, so one shared listener can
+      // serve both pickers without knowing which is open.
       return `<button class="sheet-option ripple ripple-dark ${selected ? 'selected' : ''}"
-                      data-filter="${which}"
+                      data-filter-set="${which}"
                       data-value="${Utils.escapeHtml(option.id)}">
                 <span>${Utils.escapeHtml(option.label)}</span>
                 ${selected ? '<span class="check">✓</span>' : ''}
@@ -281,6 +300,11 @@ const SearchScreen = {
 
   /**
    * Show the bid dialog for a request.
+   *
+   * This one does attach its own handlers, which is safe here and not a
+   * repeat of the earlier mistake: the input and buttons are created fresh
+   * each time the sheet opens and destroyed when its contents are replaced,
+   * so their listeners go with them and cannot accumulate.
    *
    * @param {string} requestId
    */
@@ -329,25 +353,8 @@ const SearchScreen = {
       error.textContent = '';
     });
 
-    document.getElementById('sheet-scrim')
+    document.getElementById('bid-cancel')
             .addEventListener('click', () => this.closeSheet());
-
-    // One permanent listener for every filter sheet. It reads which filter a
-    // row belongs to from the row itself, so it holds no state and cannot be
-    // attached twice.
-    document.getElementById('sheet-body').addEventListener('click', event => {
-      const option = event.target.closest('.sheet-option');
-      if (!option) return;
-
-      // An empty value is the "all" row, which clears that one filter and
-      // leaves the other alone.
-      this.filters[option.dataset.filter] = option.dataset.value || null;
-
-      this.closeSheet();
-      this.renderFilters();
-      this.bindFilters();
-      this.renderList();
-    });
 
     document.getElementById('bid-submit').addEventListener('click', () => {
       const digits = Utils.digitsOnly(input.value);
@@ -374,9 +381,57 @@ const SearchScreen = {
      EVENTS
      ================================================================== */
 
-  bindFilters() {
-    document.querySelectorAll('.filter-btn').forEach(button => {
-      button.addEventListener('click', () => this.openFilterSheet(button.dataset.filter));
+  /**
+   * Attach the one and only click listener for this screen.
+   *
+   * Bound to #app-content, which MainApp refills but never replaces, so the
+   * listener outlives every redraw and every navigation away and back. The
+   * guard makes calling this repeatedly harmless.
+   *
+   * Each branch identifies its target by a data attribute rather than by a
+   * stored element, so freshly drawn markup works immediately with no
+   * re-binding step that could be skipped.
+   */
+  bindOnce() {
+    if (this._bound) return;
+    this._bound = true;
+
+    document.getElementById('app-content').addEventListener('click', event => {
+
+      // Open a filter picker.
+      const filterButton = event.target.closest('[data-filter-open]');
+      if (filterButton) {
+        this.openFilterSheet(filterButton.dataset.filterOpen);
+        return;
+      }
+
+      // Choose a value inside a filter picker. An empty value is the "all"
+      // row, which clears that one filter and leaves the other alone.
+      const option = event.target.closest('[data-filter-set]');
+      if (option) {
+        this.filters[option.dataset.filterSet] = option.dataset.value || null;
+        this.closeSheet();
+        this.refresh();
+        return;
+      }
+
+      // Tap outside an open sheet.
+      if (event.target.closest('#sheet-scrim')) {
+        this.closeSheet();
+        return;
+      }
+
+      // Explain the boost badge.
+      if (event.target.closest('[data-boost]')) {
+        alert(CONFIG.SEARCH.BOOST_EXPLANATION);
+        return;
+      }
+
+      // Open the bid dialog.
+      const bidButton = event.target.closest('[data-bid]');
+      if (bidButton) {
+        this.openBidSheet(bidButton.dataset.bid);
+      }
     });
   },
 
@@ -389,23 +444,8 @@ const SearchScreen = {
       this.filters.university = this.profile.university;
     }
 
-    this.renderFilters();
-    this.bindFilters();
-    this.renderList();
-
-    document.getElementById('sheet-scrim')
-            .addEventListener('click', () => this.closeSheet());
-
-    // One listener on the list rather than one per card, so cards redrawn
-    // after a bid or a filter change need no re-binding.
-    document.getElementById('search-list').addEventListener('click', event => {
-      if (event.target.closest('[data-boost]')) {
-        alert(CONFIG.SEARCH.BOOST_EXPLANATION);
-        return;
-      }
-      const bidButton = event.target.closest('[data-bid]');
-      if (bidButton) this.openBidSheet(bidButton.dataset.bid);
-    });
+    this.refresh();
+    this.bindOnce();
   }
 
 };
