@@ -582,7 +582,8 @@ const SignUp = {
       isValid() {
         const page = CONFIG.SIGNUP.PAGE_CONTACT;
         const digits = Utils.digitsOnly(SignUp.data.phone || '');
-        return digits.length === page.PHONE_PREFIX.length + page.PHONE_REMAINING_DIGITS;
+        return digits.length === page.PHONE_DIGITS
+            && digits.startsWith(page.PHONE_MUST_START);
       },
 
       privacyNote: () => CONFIG.SIGNUP.PAGE_CONTACT.PRIVACY_NOTE
