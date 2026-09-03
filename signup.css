@@ -449,23 +449,21 @@
 .phone-row.focused { border-color: var(--brand); background: var(--surface); }
 .phone-row.invalid { border-color: var(--danger); }
 
-.phone-prefix {
-  padding: 0 12px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text-muted);
-  border-inline-end: 1px solid var(--divider);
-}
 
 .phone-row .field-input {
   border: none;
   background: transparent;
-  /* Digits continue from the prefix rather than filling from the far edge. */
   text-align: left;
   letter-spacing: 2px;
+}
+
+/* The placeholder must not be mistaken for a typed value, so it is noticeably
+   lighter than the text colour and carries no letter spacing. */
+.phone-row .field-input::placeholder {
+  color: var(--text-muted);
+  opacity: .55;
+  letter-spacing: 1px;
+  font-weight: 400;
 }
 
 /* Collapsible invite section: a row that expands to reveal the field, so the
