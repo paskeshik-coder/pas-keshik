@@ -371,15 +371,17 @@ const CONFIG = {
       PHONE_LABEL: 'شماره تلفن همراه',
 
       /*
-        The prefix is fixed in the field rather than typed. Every Iranian
-        mobile number begins 09, so showing it as part of the field means the
-        user types 9 digits instead of 11 and cannot enter a wrong prefix —
-        a whole class of validation error simply cannot occur.
+        The whole number is typed, with the expected shape shown as greyed
+        placeholder text inside the empty field. The placeholder vanishes the
+        moment anything is typed and returns if the field is emptied again —
+        that is the browser's native behaviour for a placeholder, so it needs
+        no code of its own.
       */
-      PHONE_PREFIX: '09',
-      PHONE_REMAINING_DIGITS: 9,
-      PHONE_HINT: '۹ رقم باقی‌مانده را وارد کنید',
-      PHONE_ERROR: 'شماره تلفن باید ۱۱ رقم باشد',
+      PHONE_PLACEHOLDER: '۰۹*********',
+      PHONE_DIGITS: 11,
+      PHONE_MUST_START: '09',
+      PHONE_HINT: 'شماره همراه خود را وارد کنید',
+      PHONE_ERROR: 'شماره تلفن باید ۱۱ رقم و با ۰۹ شروع شود',
 
       INVITE_TOGGLE: 'کد دعوت دارید؟',
       INVITE_LABEL: 'کد دعوت',
