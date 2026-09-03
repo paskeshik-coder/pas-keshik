@@ -498,6 +498,92 @@ const CONFIG = {
     // completes the gesture rather than snapping back.
     COMMIT_FRACTION: 0.4
   },
+  // Jalali month names, in order. Used wherever a date is written out.
+  JALALI_MONTHS: [
+    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+  ],
+
+
+  /* ==========================================================================
+     SECTION 9 — SEARCH SCREEN
+     The public board. Every active request the current user is eligible to
+     cover appears here.
+
+     SCOPE, not filters: the board only ever shows requests from the user's own
+     city and own رشته. Neither is shown on a card or offered as a filter,
+     because every card would carry the same two values.
+     ====================================================================== */
+  SEARCH: {
+    FILTER_UNIVERSITY_ALL: 'همه دانشگاه‌های',   // city name is appended
+    FILTER_WARD_ALL: 'همه بخش‌ها',
+
+    // Card content.
+    START_LABEL: 'شروع',
+    END_LABEL: 'پایان',
+    // [X] is replaced with the current lowest bid. Hidden entirely when a
+    // request has no bids yet.
+    LOWEST_BID_TEXT: 'پایین‌ترین قیمت پیشنهاد داده شده در حال حاضر [X] تومان است.',
+
+    BID_BUTTON: 'پیشنهاد قیمت',
+    BID_BUTTON_ALREADY: 'پیشنهاد داده‌اید',
+    OWN_REQUEST_LABEL: 'درخواست شما',
+
+    // Boost badge and the note shown when it is tapped.
+    BOOST_BADGE: 'تبلیغ',
+    BOOST_EXPLANATION: 'این درخواست توسط کاربری که دیگران را به پاس‌کشیک دعوت کرده بالای لیست نمایش داده می‌شود. برای اطلاعات بیشتر به بخش کد دعوت مراجعه کنید.',
+
+    // Empty states. The board can legitimately be empty for a long time in a
+    // small city, so this needs to explain rather than just say "nothing".
+    EMPTY_TITLE: 'در حال حاضر درخواستی وجود ندارد',
+    EMPTY_TEXT: 'هنوز کسی در شهر و رشته شما درخواست کشیک ثبت نکرده است. بعداً دوباره سر بزنید.',
+    EMPTY_FILTERED_TITLE: 'نتیجه‌ای یافت نشد',
+    EMPTY_FILTERED_TEXT: 'با این فیلترها درخواستی پیدا نشد. فیلترها را تغییر دهید.',
+
+    // Bid dialog.
+    BID_TITLE: 'پیشنهاد قیمت',
+    BID_EXPLANATION: 'مبلغی که حاضرید در ازای پوشش این کشیک دریافت کنید را وارد کنید.',
+    BID_PLACEHOLDER: 'مبلغ به تومان',
+    BID_SUBMIT: 'ثبت پیشنهاد',
+    BID_CANCEL: 'انصراف',
+    // Eight digits, as agreed. Zero is permitted: covering a friend's shift
+    // for nothing is a real case and not an error.
+    BID_MAX_DIGITS: 8,
+    BID_ERROR_EMPTY: 'مبلغ را وارد کنید',
+    BID_SUCCESS: 'پیشنهاد شما ثبت شد.',
+
+    /*
+      WARD LISTS — placeholders, replace with your own.
+
+      Two separate lists that happen to hold the same values today. Kept apart
+      deliberately so medicine and nursing wards can diverge later without one
+      edit disturbing the other.
+
+      Only users whose رشته has hasWards set see the ward filter at all.
+    */
+    WARDS: {
+      medicine: [
+        { id: 'emergency', label: 'اورژانس' },
+        { id: 'internal',  label: 'داخلی' },
+        { id: 'surgery',   label: 'جراحی' },
+        { id: 'pediatrics',label: 'اطفال' },
+        { id: 'obgyn',     label: 'زنان و زایمان' },
+        { id: 'icu',       label: 'آی‌سی‌یو' },
+        { id: 'ccu',       label: 'سی‌سی‌یو' },
+        { id: 'psychiatry',label: 'روان‌پزشکی' }
+      ],
+      nursing: [
+        { id: 'emergency', label: 'اورژانس' },
+        { id: 'internal',  label: 'داخلی' },
+        { id: 'surgery',   label: 'جراحی' },
+        { id: 'pediatrics',label: 'اطفال' },
+        { id: 'obgyn',     label: 'زنان و زایمان' },
+        { id: 'icu',       label: 'آی‌سی‌یو' },
+        { id: 'ccu',       label: 'سی‌سی‌یو' },
+        { id: 'psychiatry',label: 'روان‌پزشکی' }
+      ]
+    }
+  },
   GENERAL: {
     APP_NAME: 'پاس‌کشیک',
 
