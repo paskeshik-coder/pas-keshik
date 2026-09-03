@@ -475,6 +475,23 @@ const CONFIG = {
       horizontally scrolling filter chips, and a wide capture zone would
       swallow the start of every attempt to scroll them.
     */
+    /*
+      Edge-swipe to open the drawer, off by default.
+
+      Android's system back gesture claims both screen edges at the OS level
+      and receives the touch before the page does, so an edge swipe usually
+      closes the app instead of opening the drawer. This is not something a web
+      page can override, and it applies equally inside Telegram, which is also
+      a WebView.
+
+      A gesture that works occasionally is worse than none: it teaches people
+      the interface is unreliable. The hamburger button is always there and
+      always works.
+
+      Set to true to re-enable, and raise EDGE_ZONE_PX if you do — though it
+      will still lose to the system gesture nearest the edge.
+    */
+    EDGE_SWIPE_ENABLED: false,
     EDGE_ZONE_PX: 26,
 
     // Fraction of the drawer's width a drag must cross before releasing
