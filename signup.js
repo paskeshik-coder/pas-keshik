@@ -448,11 +448,7 @@ const SignUp = {
       render() {
         const page = CONFIG.SIGNUP.PAGE_CONTACT;
 
-        // Strip the fixed prefix for display, since the field holds only the
-        // remaining digits.
         const stored = SignUp.data.phone || '';
-        const tail = stored.startsWith(page.PHONE_PREFIX)
-          ? stored.slice(page.PHONE_PREFIX.length) : '';
 
         return `
           <h2 class="signup-title">${Utils.escapeHtml(page.TITLE)}</h2>
@@ -462,10 +458,10 @@ const SignUp = {
                 ${Utils.escapeHtml(page.PHONE_LABEL)}
               </label>
               <div class="phone-row" id="phone-row">
-                <span class="phone-prefix">${Utils.toPersianDigits(page.PHONE_PREFIX)}</span>
                 <input class="field-input" id="phone-input" type="tel"
                        inputmode="numeric" autocomplete="tel"
-                       value="${Utils.toPersianDigits(tail)}">
+                       placeholder="${Utils.escapeHtml(page.PHONE_PLACEHOLDER)}"
+                       value="${Utils.toPersianDigits(stored)}">
               </div>
               <span class="field-hint" id="phone-hint">
                 ${Utils.escapeHtml(page.PHONE_HINT)}
@@ -511,15 +507,13 @@ const SignUp = {
           const cursorBefore = input.selectionStart;
           const lengthBefore = input.value.length;
 
-          const digits = Utils.digitsOnly(input.value)
-                              .slice(0, page.PHONE_REMAINING_DIGITS);
+          const digits = Utils.digitsOnly(input.value).slice(0, page.PHONE_DIGITS);
 
           input.value = Utils.toPersianDigits(digits);
           const shift = input.value.length - lengthBefore;
           input.setSelectionRange(cursorBefore + shift, cursorBefore + shift);
 
-          SignUp.data.phone = digits ? page.PHONE_PREFIX + digits : '';
-
+          SignUp.data.phone = digits;
           row.classList.remove('invalid');
           hint.classList.remove('error');
           hint.textContent = page.PHONE_HINT;
@@ -532,8 +526,14 @@ const SignUp = {
           row.classList.remove('focused');
 
           const digits = Utils.digitsOnly(input.value);
-          // Silence on an untouched field; an error only once something is there.
-          if (digits.length && digits.length < page.PHONE_REMAINING_DIGITS) {
+
+          // Silence on an untouched field; an error only once something is
+          // there. Both the length and the prefix are checked, since a valid
+          // Iranian mobile number is eleven digits beginning 09.
+          const wrongLength = digits.length !== page.PHONE_DIGITS;
+          const wrongPrefix = !digits.startsWith(page.PHONE_MUST_START);
+
+          if (digits.length && (wrongLength || wrongPrefix)) {
             row.classList.add('invalid');
             hint.classList.add('error');
             hint.textContent = page.PHONE_ERROR;
