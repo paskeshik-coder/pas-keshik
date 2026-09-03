@@ -164,6 +164,56 @@ const Utils = {
 
     return palette[Math.abs(hash) % palette.length];
   },
+  /**
+   * Format a price with thousand separators, in Persian digits.
+   *
+   * Iranian prices run to millions of تومان, and an unbroken run of eight
+   * digits is genuinely hard to read at a glance — a bidder comparing offers
+   * needs to see the magnitude instantly, not count characters.
+   *
+   * @param   {number|string} amount  Price in تومان.
+   * @returns {string}                e.g. ۱٬۲۵۰٬۰۰۰
+   */
+  formatPrice(amount) {
+    const digits = this.digitsOnly(amount);
+    if (!digits) return '';
+
+    // U+066C is the Arabic thousands separator, which sits correctly in
+    // Persian text where a Latin comma would look foreign.
+    const grouped = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '\u066C');
+    return this.toPersianDigits(grouped);
+  },
+
+  /**
+   * Format a moment as a Jalali date with time.
+   *
+   * Input is an ISO string, which is always UTC. It is converted to Tehran's
+   * wall clock before the date is taken, because a shift starting at 00:30
+   * Tehran time falls on a different day in UTC — displaying the UTC date
+   * would show the wrong day to every single user.
+   *
+   * @param   {string} isoString  An ISO 8601 timestamp.
+   * @returns {string}            e.g. «۱۱ شهریور ۱۴۰۵ — ساعت ۰۸:۰۰»
+   */
+  formatJalaliDateTime(isoString) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Tehran',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(new Date(isoString));
+
+    const get = type => parts.find(p => p.type === type).value;
+
+    const [jy, jm, jd] = Jalali.fromGregorian(
+      Number(get('year')), Number(get('month')), Number(get('day'))
+    );
+
+    const monthName = CONFIG.JALALI_MONTHS[jm - 1];
+    const clock = `${get('hour')}:${get('minute')}`;
+
+    return `${this.toPersianDigits(jd)} ${monthName} ${this.toPersianDigits(jy)}`
+         + ` — ساعت ${this.toPersianDigits(clock)}`;
+  },
 
   /**
    * Read the saved user profile from this device.
