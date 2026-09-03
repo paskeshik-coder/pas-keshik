@@ -258,30 +258,25 @@ const SearchScreen = {
 
     const rows = [{ id: '', label: allLabel }, ...options].map(option => {
       const selected = (this.filters[which] || '') === option.id;
+      /*
+        Each row carries which filter it belongs to. The alternative — a
+        listener that closes over `which` — has to be attached each time the
+        sheet opens, and since the sheet element is reused rather than
+        recreated, those listeners accumulate. After opening both pickers
+        once, a single tap fired both handlers: choosing a ward also wrote
+        that ward's id into the university filter, which matched nothing and
+        emptied the board. Naming the filter in the markup lets one permanent
+        listener serve every sheet.
+      */
       return `<button class="sheet-option ripple ripple-dark ${selected ? 'selected' : ''}"
+                      data-filter="${which}"
                       data-value="${Utils.escapeHtml(option.id)}">
                 <span>${Utils.escapeHtml(option.label)}</span>
                 ${selected ? '<span class="check">✓</span>' : ''}
               </button>`;
     }).join('');
 
-    this.openSheet(
-      isUniversity ? 'دانشگاه' : 'بخش',
-      rows
-    );
-
-    document.getElementById('sheet-body').addEventListener('click', event => {
-      const option = event.target.closest('.sheet-option');
-      if (!option) return;
-
-      // An empty value means the "all" row, which clears the filter.
-      this.filters[which] = option.dataset.value || null;
-
-      this.closeSheet();
-      this.renderFilters();
-      this.bindFilters();
-      this.renderList();
-    });
+    this.openSheet(isUniversity ? 'دانشگاه' : 'بخش', rows);
   },
 
   /**
@@ -334,8 +329,25 @@ const SearchScreen = {
       error.textContent = '';
     });
 
-    document.getElementById('bid-cancel')
+    document.getElementById('sheet-scrim')
             .addEventListener('click', () => this.closeSheet());
+
+    // One permanent listener for every filter sheet. It reads which filter a
+    // row belongs to from the row itself, so it holds no state and cannot be
+    // attached twice.
+    document.getElementById('sheet-body').addEventListener('click', event => {
+      const option = event.target.closest('.sheet-option');
+      if (!option) return;
+
+      // An empty value is the "all" row, which clears that one filter and
+      // leaves the other alone.
+      this.filters[option.dataset.filter] = option.dataset.value || null;
+
+      this.closeSheet();
+      this.renderFilters();
+      this.bindFilters();
+      this.renderList();
+    });
 
     document.getElementById('bid-submit').addEventListener('click', () => {
       const digits = Utils.digitsOnly(input.value);
