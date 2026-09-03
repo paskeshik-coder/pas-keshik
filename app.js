@@ -275,7 +275,9 @@ const MainApp = {
    * Screens not yet built fall back to a placeholder, so a drawer item can be
    * added before its screen exists without producing a dead tap.
    */
-  SCREENS: {},
+  SCREENS: {
+    search: SearchScreen
+  },
 
   /**
    * Placeholder for a nav item whose screen has not been written yet.
