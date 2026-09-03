@@ -66,21 +66,27 @@ const ART = {
       <path d="M9 7.5V6a2 2 0 012-2h2a2 2 0 012 2v1.5"/>
       <path d="M3 12.5h18"/></svg>`,
 
+    // Ticket. Drawn as a rounded rectangle with two notches bitten out of the
+    // sides and a single dashed line, rather than the many short strokes of a
+    // realistic stub — at 22px those strokes merge into a grey smear that
+    // reads as a film strip.
     ticket: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4 8.5V6.5h16v2a2.5 2.5 0 000 5v2H4v-2a2.5 2.5 0 000-5z"/>
-      <path d="M13 6.5v1.5M13 11v2M13 15.5v1.5"/></svg>`,
+      stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 9V7.5A1.5 1.5 0 015.5 6h13A1.5 1.5 0 0120 7.5V9a3 3 0 000 6v1.5a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 16.5V15a3 3 0 000-6z"/>
+      <path d="M13.5 9.5v5" stroke-dasharray="1.5 2.2"/></svg>`,
 
     mail: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3" y="5.5" width="18" height="13" rx="2"/>
       <path d="M3.5 7l8.5 6 8.5-6"/></svg>`,
 
+    // Gear. Six broad teeth instead of the usual eight or twelve, and a large
+    // hub: at 22px, fine teeth blur into a soft blob with no recognisable
+    // silhouette. Fewer, bigger shapes survive being shrunk.
     gear: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3.2"/>
-      <path d="M12 2.5l1.4 2.6 2.9-.5.5 2.9 2.6 1.4-1.6 2.5 1.6 2.5-2.6 1.4-.5 2.9-2.9-.5L12 21.5l-1.4-2.6-2.9.5-.5-2.9-2.6-1.4L6.2 12 4.6 9.5l2.6-1.4.5-2.9 2.9.5z"/></svg>`,
-
+      stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3.4"/>
+      <path d="M12 2.6v2.9M12 18.5v2.9M20.1 7.3l-2.5 1.45M6.4 15.25L3.9 16.7M20.1 16.7l-2.5-1.45M6.4 8.75L3.9 7.3"/></svg>`,
     menu: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round">
       <path d="M4 7h16M4 12h16M4 17h16"/></svg>`
