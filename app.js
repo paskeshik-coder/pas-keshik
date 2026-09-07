@@ -416,7 +416,12 @@ const MainApp = {
 
     document.getElementById('drawer-reset').addEventListener('click', () => {
       if (!confirm(CONFIG.DEMO.RESET_CONFIRM)) return;
+
+      // The demo board goes with the profile. Leaving it behind would seed the
+      // next sign-up with requests belonging to the previous one.
       localStorage.removeItem('paskeshik_profile');
+      DemoStore.reset();
+
       location.reload();
     });
   },
