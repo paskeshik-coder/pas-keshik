@@ -305,27 +305,34 @@ p, span, div { overflow-wrap: break-word; }
   background: var(--brand);
 }
 
-/* Navigation row. Matching the sign-up wizard: forward on the left, back on
-   the right, since forward is leftward in a right-to-left layout. */
+/*
+  Navigation row. The buttons sit in opposite corners rather than filling the
+  width: an intro page is something to read, and a full-width button pair
+  competes with the text for attention.
+
+  Under right-to-left layout the first child lands on the right, so قبلی is
+  written first in the markup and the order rules place forward on the left.
+*/
 .intro-nav {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
   gap: 12px;
-  width: 100%;
-  max-width: 340px;
 }
-.intro-nav .btn-next { flex: 2; order: 2; }
-.intro-nav .btn-back { flex: 1; order: 1; }
 
-/* قبلی is hidden rather than removed on the first page, so the row keeps its
-   width and بعدی does not change size between pages. */
+.intro-nav .btn-back { order: 1; }
+.intro-nav .btn-next { order: 2; }
+
+/* Sized to their own text rather than stretched to fill the row. */
+.intro-nav .btn {
+  flex: 0 0 auto;
+  padding: 0 22px;
+}
+
+/* Hidden rather than removed on the first page, so it keeps its space and
+   بعدی stays in the same corner instead of sliding across. */
 .intro-nav .btn-back.hidden { visibility: hidden; }
-
-/* On the last page the navigation row is replaced by the start button, which
-   occupies the same slot so nothing below it shifts. */
-#intro-start {
-  width: 100%;
-  max-width: 340px;
-}
 
 
 /* -- Blocking notice ------------------------------------------------------
