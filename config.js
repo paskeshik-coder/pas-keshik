@@ -683,11 +683,20 @@ const CONFIG = {
     RATED_MESSAGE: 'ممنون از بازخورد شما',
 
     /*
-      How long the accepted entry stays on screen, in hours. After this it
-      disappears and the rating button goes with it. Computed on read, so
-      nothing has to be scheduled.
+      An accepted request stays on screen until its shift has ended, matching
+      what the bidder sees on their side.
+
+      It was 24 hours from acceptance, which broke down for a shift more than a
+      day away: the requester lost the contact details of the person covering
+      it before the shift had even happened, while the bidder kept theirs.
+      Ending both at the same moment means neither side is left holding a
+      commitment they can no longer look up.
+
+      RATING is separate and stays at 24 hours. Its window starts at
+      acceptance, since the point is a prompt reaction to the exchange rather
+      than a verdict on the shift itself.
     */
-    ACCEPTED_VISIBLE_HOURS: 24
+    RATING_WINDOW_HOURS: 24
   },
 
 
