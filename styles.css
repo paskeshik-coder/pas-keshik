@@ -228,22 +228,27 @@ p, span, div { overflow-wrap: break-word; }
    behaviour for free — far better than reimplementing swipe in JavaScript.  */
 #screen-intro { background: var(--surface); }
 
+/*
+  Pages sit side by side in a track that is moved by transform. There is no
+  scroll container, which is the point: nothing here can be grabbed by a
+  horizontal drag, so the platform back gesture has nothing to intercept.
+  The sliding animation is unchanged — only the input method is.
+*/
+.intro-viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
 .intro-track {
   display: flex;
-  flex: 1;                          /* take all vertical space above the dots */
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;    /* always settle exactly on a page */
-  scroll-behavior: smooth;
-
-  /* Hide the horizontal scrollbar; the dots communicate position instead. */
-  scrollbar-width: none;
+  height: 100%;
+  transition: transform .34s var(--ease);
+  will-change: transform;
 }
-.intro-track::-webkit-scrollbar { display: none; }
 
 .intro-page {
-  flex: 0 0 100%;                   /* exactly one screen wide, never shrinks */
-  scroll-snap-align: center;
+  flex: 0 0 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -272,13 +277,14 @@ p, span, div { overflow-wrap: break-word; }
   max-width: 340px;
 }
 
-/* Footer holding the dots and, on the last page, the start button. */
+/* Footer holding the dots, the navigation buttons, and the start button. */
 .intro-footer {
-  padding: 20px 28px 32px;
+  flex-shrink: 0;
+  padding: 16px 24px calc(24px + env(safe-area-inset-bottom, 0));
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
 }
 
 .intro-dots { display: flex; gap: 9px; }
@@ -299,27 +305,27 @@ p, span, div { overflow-wrap: break-word; }
   background: var(--brand);
 }
 
-/* The start button occupies its slot from the beginning but is invisible and
-   untappable until the last page. Reserving the space stops the dots from
-   jumping upward when the button appears. */
-#intro-start {
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .35s var(--ease);
+/* Navigation row. Matching the sign-up wizard: forward on the left, back on
+   the right, since forward is leftward in a right-to-left layout. */
+.intro-nav {
+  display: flex;
+  gap: 12px;
   width: 100%;
-  max-width: 320px;
+  max-width: 340px;
 }
-#intro-start.visible {
-  opacity: 1;
-  pointer-events: auto;
-}
+.intro-nav .btn-next { flex: 2; order: 2; }
+.intro-nav .btn-back { flex: 1; order: 1; }
 
-.intro-hint {
-  font-size: 13px;
-  color: var(--text-muted);
-  transition: opacity .35s var(--ease);
+/* قبلی is hidden rather than removed on the first page, so the row keeps its
+   width and بعدی does not change size between pages. */
+.intro-nav .btn-back.hidden { visibility: hidden; }
+
+/* On the last page the navigation row is replaced by the start button, which
+   occupies the same slot so nothing below it shifts. */
+#intro-start {
+  width: 100%;
+  max-width: 340px;
 }
-.intro-hint.hidden { opacity: 0; }
 
 
 /* -- Blocking notice ------------------------------------------------------
