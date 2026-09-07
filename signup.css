@@ -194,33 +194,60 @@
    Horizontal scroll-snap. The side padding is what allows the first and last
    cards to reach the centre; without it they would stop at the screen edge.
    ====================================================================== */
+/* ==========================================================================
+   PAGE 2 — MAJOR CAROUSEL
+   Driven by buttons, not swiping.
+
+   Horizontal swipe was removed throughout the app: inside a Telegram Mini App
+   a horizontal drag can be claimed by the platform's own back gesture and
+   close the whole app, which is unrecoverable and looks like a crash. Buttons
+   cannot be intercepted. The sliding animation is kept — only the input
+   changed, so it still feels like a carousel.
+   ====================================================================== */
+.major-carousel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.major-arrow {
+  flex: 0 0 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  line-height: 1;
+  color: var(--brand);
+  background: var(--background);
+  transition: opacity .2s var(--ease);
+}
+/* At either end the arrow stays in place rather than disappearing, so the
+   row does not reflow and shift the cards sideways. */
+.major-arrow:disabled { opacity: .25; }
+
+/* Cards are moved by transform, so they can sit outside this box without any
+   scroll region existing for a gesture to hijack. */
+.major-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px 0;
+}
+
 .major-track {
   display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  padding: 10px 0;
   gap: 14px;
-  scrollbar-width: none;
+  transition: transform .34s var(--ease);
+  /* will-change asks the browser to promote this to its own layer, which
+     keeps the slide smooth on a mid-range phone. */
+  will-change: transform;
 }
-
-/*
-  Empty flex items at each end, standing in for what used to be container
-  padding. Browsers do not count a scroll container's trailing padding as part
-  of its scrollable width, so with padding the first and last cards could not
-  physically reach the centre — which also made them impossible to tap, since
-  only a centred card is selectable. Real elements are always counted.
-
-  Width is half the leftover space beside a card, so an end card lands dead
-  centre: (100% - 62%) / 2 = 19%.
-*/
-.major-spacer {
-  flex: 0 0 19%;
-}
-.major-track::-webkit-scrollbar { display: none; }
 
 .major-card {
-  flex: 0 0 62%;
-  scroll-snap-align: center;
+  /* Sized against the viewport, so the neighbours peek in at each edge. */
+  flex: 0 0 64%;
   background: var(--background);
   border: 3px solid transparent;
   border-radius: 16px;
@@ -229,9 +256,8 @@
   flex-direction: column;
   align-items: center;
   gap: 14px;
-  /* Scale and opacity are set by JavaScript from each card's distance to the
-     centre, so the transition here smooths that continuous change. */
-  transition: border-color .25s var(--ease), background-color .25s var(--ease);
+  transition: border-color .25s var(--ease), background-color .25s var(--ease),
+              transform .34s var(--ease), opacity .34s var(--ease);
 }
 
 .major-card .major-icon {
@@ -259,8 +285,6 @@
   content: '✓';
   position: absolute;
   top: 10px;
-  /* inset-inline-start follows text direction, so this lands on the correct
-     side automatically under RTL. */
   inset-inline-start: 12px;
   width: 26px;
   height: 26px;
@@ -275,27 +299,38 @@
 
 
 /* ==========================================================================
-   PAGE 3 — SCROLL WHEELS
-   Native scroll-snap gives real flick physics and momentum, which a
-   hand-written drag handler would only approximate.
+   PAGE 3 — VALUE WHEELS
+   Also button-driven. Vertical scrolling would not have collided with the
+   back gesture, but mixing two input styles in one wizard teaches nothing
+   consistent, so both use the same arrows.
    ====================================================================== */
-.wheel-group { margin-bottom: 18px; }
+.wheel-group { margin-bottom: 14px; }
 
 .wheel-caption {
   text-align: center;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-muted);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
+
+.wheel-arrow {
+  display: block;
+  width: 100%;
+  height: 34px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--brand);
+  transition: opacity .2s var(--ease);
+}
+.wheel-arrow:disabled { opacity: .25; }
 
 .wheel {
   position: relative;
   overflow: hidden;
 }
 
-/* The band marking the selected row. Placed behind the numbers and untappable
-   so it can never intercept a scroll gesture. */
+/* The band marking the selected row, behind the values and untappable. */
 .wheel-band {
   position: absolute;
   left: 12px;
@@ -307,31 +342,26 @@
   z-index: 0;
 }
 
-.wheel-scroll {
-  height: 100%;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  scrollbar-width: none;
+/* Moved by transform rather than scrolled, for the same reason as the
+   carousel: no scroll region, nothing for a gesture to take over. */
+.wheel-track {
   position: relative;
   z-index: 1;
+  transition: transform .3s var(--ease);
+  will-change: transform;
 }
-.wheel-scroll::-webkit-scrollbar { display: none; }
 
 .wheel-item {
-  scroll-snap-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 500;
   color: var(--text-primary);
-  /* Scale and opacity come from JavaScript, based on distance from centre. */
-  transition: opacity .15s linear, transform .15s var(--ease);
+  transition: opacity .25s linear, transform .25s var(--ease);
 }
-
-/* Empty spacers above and below, so the first and last values can reach the
-   middle of the wheel instead of stopping at its edge. */
-.wheel-pad { flex-shrink: 0; }
+  
+   
 
 
 /* ==========================================================================
