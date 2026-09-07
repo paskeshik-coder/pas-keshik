@@ -150,6 +150,74 @@ const Jalali = {
   },
 
   /** Whether a Jalali year has 366 days. @param {number} jy @returns {boolean} */
-  isLeapYear(jy) { return this.monthLength(jy, 12) === 30; }
+  isLeapYear(jy) { return this.monthLength(jy, 12) === 30; },
+
+  /**
+   * Which column of a Persian calendar a date falls in.
+   *
+   * The Persian week begins on شنبه, while JavaScript's getUTCDay counts from
+   * Sunday. Adding one and taking the remainder shifts the origin so that
+   * Saturday becomes column 0 — which is what the month grid needs, since its
+   * first column is شنبه.
+   *
+   * Verified against the Gregorian weekday for a set of known dates, and
+   * checked to advance by exactly one across a full month with no breaks.
+   *
+   * @param   {number} jy  Jalali year.
+   * @param   {number} jm  Jalali month, 1-12.
+   * @param   {number} jd  Jalali day.
+   * @returns {number}     0 for شنبه through 6 for جمعه.
+   */
+  weekday(jy, jm, jd) {
+    const [gy, gm, gd] = this.toGregorian(jy, jm, jd);
+    return (new Date(Date.UTC(gy, gm - 1, gd)).getUTCDay() + 1) % 7;
+  },
+
+  /**
+   * Turn a Jalali date and a wall-clock time in Tehran into an ISO timestamp.
+   *
+   * Storage is always UTC, but the user picks a Tehran wall-clock time, so the
+   * offset has to be removed. Iran is UTC+3:30 with no daylight saving, so
+   * this is a fixed subtraction — but it is written as one named constant
+   * rather than scattered arithmetic, so a future change to the offset is one
+   * edit here instead of a hunt through the file.
+   *
+   * @param   {number} jy     Jalali year.
+   * @param   {number} jm     Jalali month, 1-12.
+   * @param   {number} jd     Jalali day.
+   * @param   {number} hour   Hour in Tehran time, 0-23.
+   * @param   {number} minute Minute, 0-59.
+   * @returns {string}        ISO 8601 timestamp.
+   */
+  toIso(jy, jm, jd, hour, minute) {
+    const [gy, gm, gd] = this.toGregorian(jy, jm, jd);
+
+    const TEHRAN_OFFSET_MINUTES = 3 * 60 + 30;
+    const utcMs = Date.UTC(gy, gm - 1, gd, hour, minute)
+                - TEHRAN_OFFSET_MINUTES * 60000;
+
+    return new Date(utcMs).toISOString();
+  },
+
+  /**
+   * Split an ISO timestamp into its Jalali date and Tehran clock time.
+   *
+   * The inverse of toIso, used to reopen a picker on a value already chosen.
+   *
+   * @param   {string} isoString
+   * @returns {{jy:number, jm:number, jd:number, hour:number, minute:number}}
+   */
+  fromIso(isoString) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Tehran',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(new Date(isoString));
+
+    const get = type => Number(parts.find(p => p.type === type).value);
+    const [jy, jm, jd] = this.fromGregorian(get('year'), get('month'), get('day'));
+
+    return { jy, jm, jd, hour: get('hour'), minute: get('minute') };
+  }
 
 };
