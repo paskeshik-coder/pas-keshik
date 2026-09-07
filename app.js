@@ -166,6 +166,9 @@ const Screens = {
      requires no change here.
      --------------------------------------------------------------------- */
   intro: {
+    /** Which page is showing. Held here so it survives a re-render. */
+    pageIndex: 0,
+
     render() {
       const pages = CONFIG.INTRO.PAGES;
 
@@ -188,45 +191,69 @@ const Screens = {
       ).join('');
 
       return `
-        <div class="intro-track" id="intro-track">${pagesHtml}</div>
+        <div class="intro-viewport">
+          <div class="intro-track" id="intro-track">${pagesHtml}</div>
+        </div>
         <div class="intro-footer">
           <div class="intro-dots" id="intro-dots">${dotsHtml}</div>
-          <div class="intro-hint" id="intro-hint">${Utils.escapeHtml(CONFIG.INTRO.SWIPE_HINT)}</div>
-          <button class="btn btn-primary btn-block ripple" id="intro-start">
+          <div class="intro-nav" id="intro-nav">
+            <button class="btn btn-primary btn-next ripple" id="intro-next">
+              ${Utils.escapeHtml(CONFIG.INTRO.NEXT_BUTTON)}
+            </button>
+            <button class="btn btn-flat btn-back ripple ripple-dark hidden" id="intro-back">
+              ${Utils.escapeHtml(CONFIG.INTRO.BACK_BUTTON)}
+            </button>
+          </div>
+          <button class="btn btn-primary ripple" id="intro-start" style="display:none">
             ${Utils.escapeHtml(CONFIG.INTRO.START_BUTTON)}
           </button>
         </div>`;
     },
 
     mount() {
-      const track      = document.getElementById('intro-track');
-      const dots       = document.querySelectorAll('.intro-dot');
-      const hint       = document.getElementById('intro-hint');
-      const startButton = document.getElementById('intro-start');
-      const lastIndex  = CONFIG.INTRO.PAGES.length - 1;
+      const track     = document.getElementById('intro-track');
+      const dots      = [...document.querySelectorAll('.intro-dot')];
+      const nav       = document.getElementById('intro-nav');
+      const nextBtn   = document.getElementById('intro-next');
+      const backBtn   = document.getElementById('intro-back');
+      const startBtn  = document.getElementById('intro-start');
+      const lastIndex = CONFIG.INTRO.PAGES.length - 1;
 
-      /*
-        RTL note: with dir="rtl" the track scrolls from right to left, so
-        scrollLeft counts downward into negative numbers as the user advances.
-        Math.abs normalises that, which keeps this code working unchanged if
-        the app is ever run left-to-right.
-      */
-      const updateForScrollPosition = () => {
-        const pageWidth = track.clientWidth;
-        const index = Math.round(Math.abs(track.scrollLeft) / pageWidth);
+      this.pageIndex = 0;
 
-        dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+      /**
+       * Slide to the current page and update everything that depends on it.
+       *
+       * Pages are full-width, so each step is exactly 100% of the viewport.
+       * Under right-to-left layout the track runs rightward from its origin,
+       * so advancing means a positive translation — the opposite sign from
+       * what the same code would need left-to-right.
+       */
+      const apply = () => {
+        track.style.transform = `translateX(${this.pageIndex * 100}%)`;
 
-        // The button appears only on the final page; the swipe hint retires
-        // at the same moment, since there is nothing left to swipe to.
-        const onLastPage = (index === lastIndex);
-        startButton.classList.toggle('visible', onLastPage);
-        hint.classList.toggle('hidden', onLastPage);
+        dots.forEach((dot, i) => dot.classList.toggle('active', i === this.pageIndex));
+
+        backBtn.classList.toggle('hidden', this.pageIndex === 0);
+
+        // On the last page the نavigation row gives way to the start button,
+        // in the same slot, so nothing below it moves.
+        const onLastPage = (this.pageIndex === lastIndex);
+        nav.style.display = onLastPage ? 'none' : '';
+        startBtn.style.display = onLastPage ? '' : 'none';
       };
 
-      track.addEventListener('scroll', updateForScrollPosition, { passive: true });
+      nextBtn.addEventListener('click', () => {
+        if (this.pageIndex < lastIndex) { this.pageIndex++; apply(); }
+      });
 
-      startButton.addEventListener('click', () => App.go('signup'));
+      backBtn.addEventListener('click', () => {
+        if (this.pageIndex > 0) { this.pageIndex--; apply(); }
+      });
+
+      startBtn.addEventListener('click', () => App.go('signup'));
+
+      apply();
     }
   },
 
