@@ -376,6 +376,138 @@ const DemoStore = {
         : this.BID_STATUS.REJECTED;
       bid.statusChangedAt = new Date().toISOString();
     });
+  },
+
+  /**
+   * The signed-in user's own request, if they have a live one.
+   *
+   * "Live" means either still open, or accepted within the display window. An
+   * accepted request has left the board but stays on this screen so its
+   * contact details can be read, so both states have to count as occupied —
+   * otherwise someone could post a second request while the first is still
+   * showing.
+   *
+   * @returns {object|null}
+   */
+  myRequest() {
+    this._load();
+
+    const me = this.currentUserId();
+    const now = Date.now();
+    const windowMs = CONFIG.REQUESTS.ACCEPTED_VISIBLE_HOURS * 60 * 60 * 1000;
+
+    const mine = this._requests.filter(r => r.ownerId === me && !r.cancelledAt);
+
+    for (const request of mine) {
+      const accepted = this._bids.find(b =>
+        b.requestId === request.id && b.status === this.BID_STATUS.ACCEPTED
+      );
+
+      if (accepted) {
+        // Visible for a fixed period after acceptance, then gone. Computed
+        // from the timestamp on each read rather than flipped by a timer.
+        const age = now - new Date(accepted.statusChangedAt).getTime();
+        if (age < windowMs) return { ...request, acceptedBid: accepted };
+        continue;
+      }
+
+      // Still open, as long as the shift has not begun.
+      if (new Date(request.startsAt).getTime() > now) return request;
+    }
+
+    return null;
+  },
+
+  /**
+   * Create a request for the signed-in user.
+   *
+   * @param   {object} details  {ward, place, startsAt, endsAt}
+   * @returns {object}          The created request.
+   */
+  createRequest(details) {
+    this._load();
+
+    const profile = Utils.getLocalProfile() || {};
+
+    const request = {
+      id: `own-${Date.now()}`,
+      major: profile.major,
+      ownerId: this.currentUserId(),
+      universityId: profile.university,
+      universityName: profile.universityName,
+      ward: details.ward || null,
+      place: details.place,
+      startsAt: details.startsAt,
+      endsAt: details.endsAt,
+      createdAt: new Date().toISOString(),
+      boostedUntil: null,
+      cancelledAt: null
+    };
+
+    this._requests.push(request);
+    return request;
+  },
+
+  /**
+   * Cancel a request and void every live bid on it.
+   *
+   * Nothing is deleted. The request is marked cancelled and its bids take the
+   * cancelled status, which keeps the record intact for the statistics the
+   * admin commands will report while removing it from every screen.
+   *
+   * @param {string} requestId
+   */
+  cancelRequest(requestId) {
+    this._load();
+
+    const request = this._requests.find(r => r.id === requestId);
+    if (request) request.cancelledAt = new Date().toISOString();
+
+    this._bids.forEach(bid => {
+      if (bid.requestId === requestId && bid.status === this.BID_STATUS.PENDING) {
+        bid.status = this.BID_STATUS.CANCELLED;
+        bid.statusChangedAt = new Date().toISOString();
+      }
+    });
+  },
+
+  /**
+   * Contact details for an accepted bid's bidder.
+   *
+   * Deliberately guarded rather than a plain lookup. The check that the bid is
+   * genuinely accepted lives with the data, not in whichever screen happens to
+   * be asking — so there is no path where a caller can obtain a phone number
+   * by asking the wrong question.
+   *
+   * In Stage 3 this becomes an Edge Function that re-verifies the acceptance
+   * in the database before returning anything, and the contact table is
+   * unreadable from the client entirely.
+   *
+   * @param   {string} bidId
+   * @returns {{name: string, phone: string}|null}
+   */
+  contactForBid(bidId) {
+    this._load();
+
+    const bid = this._bids.find(b => b.id === bidId);
+    if (!bid || bid.status !== this.BID_STATUS.ACCEPTED) return null;
+
+    // Fabricated, since demo bidders are not real people.
+    return {
+      name: 'سارا محمدی',
+      phone: '09121234567'
+    };
+  },
+
+  /**
+   * Record a thumbs-up for the bidder on an accepted bid.
+   *
+   * @param {string} bidId
+   */
+  rateBid(bidId) {
+    this._load();
+    const bid = this._bids.find(b => b.id === bidId);
+    if (bid) bid.rated = true;
   }
 
 };
