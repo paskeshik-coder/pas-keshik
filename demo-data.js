@@ -241,15 +241,18 @@ const DemoStore = {
       */
       .filter(request => !profile.major || request.major === profile.major)
 
-      // A request disappears once its shift has started or a week has passed,
-      // whichever comes first. Computed on read, so nothing is scheduled and
-      // nothing can silently stop running.
-      .filter(request => {
-        const started = new Date(request.startsAt).getTime() <= now;
-        const weekOld = now - new Date(request.createdAt).getTime()
-                        > 7 * 24 * 60 * 60 * 1000;
-        return !started && !weekOld;
-      })
+      /*
+        A request lives until its shift begins, and no longer.
+
+        There was also a one-week limit, now removed: it was arbitrary, and it
+        made a shift posted far in advance vanish before it happened. Shift
+        start is the only boundary that means anything — after it, the request
+        is not late, it is moot.
+
+        Computed on read, so nothing is scheduled and nothing can silently
+        stop running.
+      */
+      .filter(request => new Date(request.startsAt).getTime() > now)
 
       // The lowest bid is attached at read time rather than stored, so it can
       // never disagree with the bids themselves.
