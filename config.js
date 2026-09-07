@@ -746,6 +746,65 @@ const CONFIG = {
     // than restrictive, since a request now survives until its shift starts.
     MAX_MONTHS_AHEAD: 12
   },
+  /* ==========================================================================
+     SECTION 13 — MY OFFERS
+     Every request the user has bid on, split into those still awaiting a
+     decision and those already settled.
+     ====================================================================== */
+  OFFERS: {
+    EMPTY_TITLE: 'هنوز پیشنهادی نداده‌اید',
+    EMPTY_TEXT: 'در بخش جستجو، کشیک‌هایی که دیگران نمی‌توانند انجام دهند نمایش داده می‌شود. اگر می‌توانید یکی از آن‌ها را بپوشانید، قیمت پیشنهادی خود را اعلام کنید.',
+    EMPTY_HINT: 'برای دیدن کشیک‌ها به بخش جستجو بروید',
+
+    PENDING_TITLE: 'در انتظار پاسخ',
+    SETTLED_TITLE: 'بسته‌شده',
+
+    MY_BID_LABEL: 'پیشنهاد شما',
+    TOMAN: 'تومان',
+
+    // Shown on pending entries so a bidder can see whether they have been
+    // undercut and decide whether to lower their offer.
+    LOWEST_LABEL: 'پایین‌ترین پیشنهاد فعلی',
+    LOWEST_IS_YOURS: 'پیشنهاد شما پایین‌ترین است',
+
+    EDIT_BUTTON: 'ویرایش',
+    WITHDRAW_BUTTON: 'انصراف',
+    WITHDRAW_CONFIRM: 'پیشنهاد شما پس گرفته شود؟',
+
+    EDIT_TITLE: 'ویرایش پیشنهاد',
+    EDIT_EXPLANATION: 'مبلغ جدید جایگزین پیشنهاد قبلی شما می‌شود.',
+    EDIT_SUBMIT: 'ثبت تغییر',
+    EDIT_CANCEL: 'انصراف',
+    EDIT_SUCCESS: 'پیشنهاد شما به‌روزرسانی شد.',
+    EDIT_ERROR_EMPTY: 'مبلغ را وارد کنید',
+    BID_MAX_DIGITS: 8,
+
+    /*
+      Status labels and the colour each badge takes. `tone` maps to a class in
+      offers.css rather than a colour written here, so the palette stays in one
+      place and follows dark mode with everything else.
+    */
+    STATUS: {
+      pending:   { label: 'در انتظار',  tone: 'wait' },
+      accepted:  { label: 'پذیرفته شد', tone: 'good' },
+      rejected:  { label: 'رد شد',      tone: 'bad'  },
+      expired:   { label: 'منقضی شد',   tone: 'dim'  },
+      cancelled: { label: 'کنسل شد',    tone: 'dim'  }
+    },
+
+    // Shown on an accepted offer. The bidder sees no contact details by
+    // design, so this explains what happens next rather than leaving the card
+    // looking like it is missing something.
+    ACCEPTED_NOTE: 'شماره تماس شما در اختیار درخواست‌دهنده قرار گرفته است و به‌زودی با شما تماس خواهد گرفت.',
+
+    /*
+      How long a settled entry stays visible, in hours. Accepted offers ignore
+      this and remain until the shift itself has ended — the bidder has agreed
+      to cover it, so the details need to stay in front of them for as long as
+      that commitment lasts.
+    */
+    SETTLED_VISIBLE_HOURS: 24
+  },
   GENERAL: {
     APP_NAME: 'پاس‌کشیک',
 
