@@ -307,7 +307,8 @@ const MainApp = {
    */
   SCREENS: {
     search: SearchScreen,
-    requests: RequestsScreen
+    requests: RequestsScreen,
+    offers: OffersScreen
   },
 
   /**
