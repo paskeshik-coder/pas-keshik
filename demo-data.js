@@ -10,7 +10,10 @@
  * these arrays, so replacing it means rewriting those method bodies and
  * nothing else.
  *
- * Dates are generated relative to now, so the demo board never goes stale.
+ * CHANGES SURVIVE A REFRESH. The seed is generated once and then kept in
+ * browser storage, so cancelling a request or accepting a bid stays done.
+ * Without that the screen could be looked at but not actually used — every
+ * reload undid whatever had just been tried.
  * ============================================================================
  */
 
@@ -87,8 +90,8 @@ const DemoData = {
       Shape shared by all majors, so a change to the timing or bid pattern
       applies everywhere instead of being repeated four times and drifting.
 
-      Index 0 is boosted, index 3 is owned by the user, index 2 has no bids.
-      `bidAmounts` seeds other people's pending offers on each request.
+      Index 0 is boosted, index 2 has no bids, index 3 is the seeded own
+      request. `bidAmounts` seeds other people's pending offers.
     */
     const shape = [
       { startDay: 3, startHour: 8,  endDay: 3, endHour: 20, createdDay: -1, boost: true,  own: false, bidAmounts: [450000, 700000] },
@@ -105,10 +108,19 @@ const DemoData = {
       shape.forEach((row, i) => {
         const requestId = `${majorId}-${i}`;
 
+        /*
+          The seeded own request belongs only to the signed-in user's own
+          رشته. Marking it in every major produced four of them, and since a
+          user may hold just one active request, cancelling one simply
+          surfaced the next — including requests from majors they can neither
+          see nor cover.
+        */
+        const isOwn = row.own && majorId === profile.major;
+
         requests.push({
           id: requestId,
           major: majorId,
-          ownerId: row.own ? 'me' : `other-${majorId}-${i}`,
+          ownerId: isOwn ? 'me' : `other-${majorId}-${i}`,
           universityId: uni(i).id,
           universityName: uni(i).name,
           ward: content.wards[i],
@@ -116,7 +128,8 @@ const DemoData = {
           startsAt: this.at(row.startDay, row.startHour),
           endsAt:   this.at(row.endDay, row.endHour),
           createdAt: this.at(row.createdDay, 10),
-          boostedUntil: row.boost ? this.at(2, 12) : null
+          boostedUntil: row.boost ? this.at(2, 12) : null,
+          cancelledAt: null
         });
 
         row.bidAmounts.forEach((amount, b) => {
@@ -148,22 +161,11 @@ const DemoData = {
  */
 const DemoStore = {
 
+  /** Where the working set is kept between page loads. */
+  STORAGE_KEY: 'paskeshik_demo',
+
   _requests: null,
   _bids: null,
-
-  /** Load the demo set once per session. */
-  _load() {
-    if (this._requests) return;
-    const built = DemoData.build();
-    this._requests = built.requests;
-    this._bids = built.bids;
-  },
-
-  /**
-   * The signed-in user's id.
-   * In Stage 3 this becomes the Telegram numeric user id.
-   */
-  currentUserId() { return 'me'; },
 
   /*
     Bid statuses. Only 'pending' counts as a live offer.
@@ -180,6 +182,73 @@ const DemoStore = {
     REJECTED: 'rejected',
     EXPIRED: 'expired',
     CANCELLED: 'cancelled'
+  },
+
+  /**
+   * Load the working set, generating it the first time.
+   *
+   * The stored copy carries the رشته and city it was built for. If either has
+   * changed — which happens after a reset and a fresh sign-up — the seed no
+   * longer matches the user and is discarded rather than shown to somebody it
+   * was not built for.
+   */
+  _load() {
+    if (this._requests) return;
+
+    const profile = Utils.getLocalProfile() || {};
+
+    try {
+      const saved = JSON.parse(localStorage.getItem(this.STORAGE_KEY) || 'null');
+      if (saved && saved.major === profile.major && saved.city === profile.city) {
+        this._requests = saved.requests;
+        this._bids = saved.bids;
+        return;
+      }
+    } catch (error) {
+      // Unreadable storage is treated as no storage, so a corrupt value can
+      // never lock the screen out — it simply reseeds.
+      console.warn('Could not read demo store:', error);
+    }
+
+    const built = DemoData.build();
+    this._requests = built.requests;
+    this._bids = built.bids;
+    this._save();
+  },
+
+  /** Persist the working set. Called after every change. */
+  _save() {
+    const profile = Utils.getLocalProfile() || {};
+    try {
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify({
+        major: profile.major,
+        city: profile.city,
+        requests: this._requests,
+        bids: this._bids
+      }));
+    } catch (error) {
+      console.warn('Could not save demo store:', error);
+    }
+  },
+
+  /** Discard everything and reseed on next access. Used by the reset button. */
+  reset() {
+    this._requests = null;
+    this._bids = null;
+    localStorage.removeItem(this.STORAGE_KEY);
+  },
+
+  /**
+   * The signed-in user's id.
+   * In Stage 3 this becomes the Telegram numeric user id.
+   */
+  currentUserId() { return 'me'; },
+
+  /** Whether a request has been settled by an accepted bid. */
+  _isAccepted(requestId) {
+    return this._bids.some(bid =>
+      bid.requestId === requestId && bid.status === this.BID_STATUS.ACCEPTED
+    );
   },
 
   /**
@@ -205,7 +274,7 @@ const DemoStore = {
   },
 
   /**
-   * All bids on a request, newest first. Used by درخواست‌های من.
+   * All bids on a request, newest first.
    *
    * @param   {string} requestId
    * @returns {object[]}
@@ -242,17 +311,19 @@ const DemoStore = {
       .filter(request => !profile.major || request.major === profile.major)
 
       /*
-        A request lives until its shift begins, and no longer.
+        Three ways a request leaves the board, all computed on read so nothing
+        has to be scheduled and nothing can silently stop running:
 
-        There was also a one-week limit, now removed: it was arbitrary, and it
-        made a shift posted far in advance vanish before it happened. Shift
-        start is the only boundary that means anything — after it, the request
-        is not late, it is moot.
+          its shift has begun   — after that the request is not late, it is moot
+          it was cancelled      — withdrawn by its owner
+          a bid was accepted    — settled, and no longer open to offers
 
-        Computed on read, so nothing is scheduled and nothing can silently
-        stop running.
+        The last two were missing, which is why a cancelled request kept
+        appearing and an accepted one never left.
       */
       .filter(request => new Date(request.startsAt).getTime() > now)
+      .filter(request => !request.cancelledAt)
+      .filter(request => !this._isAccepted(request.id))
 
       // The lowest bid is attached at read time rather than stored, so it can
       // never disagree with the bids themselves.
@@ -268,15 +339,8 @@ const DemoStore = {
         const bBoosted = b.boostedUntil && new Date(b.boostedUntil).getTime() > now;
         if (aBoosted !== bBoosted) return aBoosted ? -1 : 1;
 
-        /*
-          Then soonest shift first, rather than most recently posted.
-
-          Newest-first was the original rule, and it stopped making sense once
-          the one-week expiry was removed: a shift six months away posted this
-          morning would outrank a shift tomorrow posted last week. Sorting by
-          when the shift actually begins puts the requests that are running out
-          of time at the top, which is what someone scanning the board needs.
-        */
+        // Then soonest shift first, so whatever is running out of time is at
+        // the top — which is what someone scanning the board needs.
         return new Date(a.startsAt) - new Date(b.startsAt);
       });
   },
@@ -323,18 +387,19 @@ const DemoStore = {
 
     if (existing) {
       existing.amount = amount;
-      return;
+    } else {
+      this._bids.push({
+        id: `${requestId}-bid-me-${Date.now()}`,
+        requestId,
+        bidderId: this.currentUserId(),
+        bidderLikes: 0,
+        amount,
+        status: this.BID_STATUS.PENDING,
+        createdAt: new Date().toISOString()
+      });
     }
 
-    this._bids.push({
-      id: `${requestId}-bid-me-${Date.now()}`,
-      requestId,
-      bidderId: this.currentUserId(),
-      bidderLikes: 0,
-      amount,
-      status: this.BID_STATUS.PENDING,
-      createdAt: new Date().toISOString()
-    });
+    this._save();
   },
 
   /**
@@ -353,6 +418,7 @@ const DemoStore = {
     if (bid) {
       bid.status = status;
       bid.statusChangedAt = new Date().toISOString();
+      this._save();
     }
   },
 
@@ -376,6 +442,8 @@ const DemoStore = {
         : this.BID_STATUS.REJECTED;
       bid.statusChangedAt = new Date().toISOString();
     });
+
+    this._save();
   },
 
   /**
@@ -383,9 +451,13 @@ const DemoStore = {
    *
    * "Live" means either still open, or accepted within the display window. An
    * accepted request has left the board but stays on this screen so its
-   * contact details can be read, so both states have to count as occupied —
-   * otherwise someone could post a second request while the first is still
-   * showing.
+   * contact details can be read, so both states count as occupied — otherwise
+   * someone could post a second request while the first is still showing.
+   *
+   * Scoped to the user's own رشته as well as their id. Their own major is the
+   * only one whose requests they can see anywhere else, so an own request in
+   * another major would be unreachable from the board while still blocking
+   * them from posting.
    *
    * @returns {object|null}
    */
@@ -394,9 +466,14 @@ const DemoStore = {
 
     const me = this.currentUserId();
     const now = Date.now();
+    const profile = Utils.getLocalProfile() || {};
     const windowMs = CONFIG.REQUESTS.ACCEPTED_VISIBLE_HOURS * 60 * 60 * 1000;
 
-    const mine = this._requests.filter(r => r.ownerId === me && !r.cancelledAt);
+    const mine = this._requests.filter(r =>
+      r.ownerId === me &&
+      !r.cancelledAt &&
+      (!profile.major || r.major === profile.major)
+    );
 
     for (const request of mine) {
       const accepted = this._bids.find(b =>
@@ -445,6 +522,7 @@ const DemoStore = {
     };
 
     this._requests.push(request);
+    this._save();
     return request;
   },
 
@@ -469,6 +547,8 @@ const DemoStore = {
         bid.statusChangedAt = new Date().toISOString();
       }
     });
+
+    this._save();
   },
 
   /**
@@ -507,7 +587,10 @@ const DemoStore = {
   rateBid(bidId) {
     this._load();
     const bid = this._bids.find(b => b.id === bidId);
-    if (bid) bid.rated = true;
+    if (bid) {
+      bid.rated = true;
+      this._save();
+    }
   }
 
 };
