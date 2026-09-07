@@ -637,6 +637,115 @@ const CONFIG = {
     */
     DEFAULT_GRANT_DAYS: 30
   },
+  // Persian weekday names, starting with شنبه to match the calendar grid's
+  // first column. Short forms are what fit above a column of dates.
+  WEEKDAYS_SHORT: ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'],
+
+
+  /* ==========================================================================
+     SECTION 11 — MY REQUESTS
+     The screen holding the user's own active request and the bids on it, plus
+     the form for creating one.
+     ====================================================================== */
+  REQUESTS: {
+    // Empty state. Written to explain the exchange, not just report emptiness:
+    // someone arriving from an invite may not yet have grasped that they are
+    // meant to post a shift as well as browse other people's.
+    EMPTY_TITLE: 'هنوز درخواستی ثبت نکرده‌اید',
+    EMPTY_TEXT: 'اگر کشیکی دارید که نمی‌توانید انجام دهید، آن را اینجا ثبت کنید. دیگران قیمت پیشنهادی خود را برای پوشش آن اعلام می‌کنند و شما هر کدام را که بخواهید می‌پذیرید.',
+    EMPTY_HINT: 'برای ثبت درخواست، دکمه + را بزنید',
+
+    // The active request card.
+    CARD_TITLE: 'درخواست فعال شما',
+    START_LABEL: 'شروع',
+    END_LABEL: 'پایان',
+    WARD_LABEL: 'بخش',
+    PLACE_LABEL: 'مکان',
+    CANCEL_BUTTON: 'لغو درخواست',
+    CANCEL_CONFIRM: 'درخواست شما لغو و از تابلو حذف می‌شود. تمام پیشنهادهای دریافتی نیز لغو خواهند شد. مطمئن هستید؟',
+
+    // Bid list.
+    BIDS_TITLE: 'پیشنهادهای دریافتی',
+    BIDS_EMPTY: 'هنوز پیشنهادی دریافت نکرده‌اید.',
+    BID_ACCEPT: 'پذیرفتن',
+    BID_REJECT: 'رد کردن',
+    BID_ACCEPT_CONFIRM: 'با پذیرفتن این پیشنهاد، تمام پیشنهادهای دیگر رد می‌شوند و درخواست شما از تابلو حذف می‌شود. این کار قابل بازگشت نیست. مطمئن هستید؟',
+    BID_REJECT_CONFIRM: 'این پیشنهاد رد شود؟',
+    TOMAN: 'تومان',
+
+    // After acceptance.
+    ACCEPTED_TITLE: 'پذیرفته شد',
+    ACCEPTED_NAME_LABEL: 'نام',
+    ACCEPTED_PHONE_LABEL: 'شماره تماس',
+    COPY_BUTTON: 'کپی',
+    COPIED_MESSAGE: 'کپی شد',
+    RATE_BUTTON: 'ثبت رضایت',
+    RATED_MESSAGE: 'ممنون از بازخورد شما',
+
+    /*
+      How long the accepted entry stays on screen, in hours. After this it
+      disappears and the rating button goes with it. Computed on read, so
+      nothing has to be scheduled.
+    */
+    ACCEPTED_VISIBLE_HOURS: 24
+  },
+
+
+  /* ==========================================================================
+     SECTION 12 — CREATE REQUEST
+     A form, then a review step. There is no editing after posting — the
+     review is what prevents the mistakes editing would have had to fix, and
+     it avoids the harder problem of what to do with bids already placed
+     against terms that then changed.
+     ====================================================================== */
+  CREATE: {
+    TITLE: 'درخواست جدید',
+    REVIEW_TITLE: 'تأیید درخواست',
+    REVIEW_INTRO: 'اطلاعات زیر را بررسی کنید. پس از ثبت، امکان ویرایش وجود ندارد.',
+
+    WARD_LABEL: 'بخش',
+    WARD_PLACEHOLDER: 'انتخاب کنید',
+    PLACE_LABEL: 'مکان',
+    PLACE_PLACEHOLDER: 'بیمارستان امام خمینی (ره)',
+    PLACE_MAX_LENGTH: 60,
+    START_LABEL: 'زمان شروع کشیک',
+    END_LABEL: 'زمان پایان کشیک',
+    PICK_DATE: 'انتخاب تاریخ',
+    PICK_TIME: 'انتخاب ساعت',
+
+    NEXT_BUTTON: 'بررسی و تأیید',
+    BACK_BUTTON: 'بازگشت',
+    SUBMIT_BUTTON: 'ثبت درخواست',
+    CANCEL_BUTTON: 'انصراف',
+
+    // Errors.
+    ERROR_WARD: 'بخش را انتخاب کنید',
+    ERROR_PLACE: 'مکان را وارد کنید',
+    ERROR_START: 'زمان شروع را انتخاب کنید',
+    ERROR_END: 'زمان پایان را انتخاب کنید',
+    ERROR_ORDER: 'زمان پایان باید بعد از زمان شروع باشد',
+    ERROR_PAST: 'زمان شروع باید در آینده باشد',
+    ERROR_ACTIVE: 'شما در حال حاضر یک درخواست فعال دارید. برای ایجاد درخواست جدید، ابتدا درخواست فعلی خود را لغو کنید.',
+
+    SUCCESS: 'درخواست شما ثبت شد.',
+
+    /*
+      Notice shown above the form, dismissible for good.
+
+      The one-week expiry was removed: a request now lives until its shift
+      begins, which is the only boundary that means anything. A shift posted
+      months ahead simply stays on the board until it happens.
+    */
+    NOTICE: 'توجه: درخواست شما با شروع زمان کشیک یا با پذیرش یک پیشنهاد، به‌صورت خودکار منقضی می‌شود.',
+    NOTICE_DISMISS: 'این پیام را دیگر نمایش نده',
+
+    // Common shift times, offered as one-tap chips beside the time picker.
+    TIME_PRESETS: ['08:00', '14:00', '20:00', '00:00'],
+
+    // How many months ahead the calendar will page forward. Generous rather
+    // than restrictive, since a request now survives until its shift starts.
+    MAX_MONTHS_AHEAD: 12
+  },
   GENERAL: {
     APP_NAME: 'پاس‌کشیک',
 
