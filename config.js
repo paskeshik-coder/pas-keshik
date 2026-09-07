@@ -162,8 +162,11 @@ const CONFIG = {
     // Text on the button at the end of the final page.
     START_BUTTON: 'شروع ثبت‌نام',
 
-    // Shown on pages 1 and 2 to hint that swiping is possible.
-    SWIPE_HINT: 'برای ادامه بکشید',
+    // Navigation between intro pages. Swiping was removed app-wide: inside a
+    // Telegram Mini App a horizontal drag can be claimed by the platform's
+    // own back gesture and close the app outright.
+    NEXT_BUTTON: 'بعدی',
+    BACK_BUTTON: 'قبلی',
 
     PAGES: [
       {
