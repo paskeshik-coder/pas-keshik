@@ -183,12 +183,12 @@ const SignUp = {
           <p class="signup-subtitle">${Utils.escapeHtml(page.SUBTITLE)}</p>
           <div class="major-carousel">
             <button class="major-arrow ripple ripple-dark" id="major-prev"
-                    aria-label="${Utils.escapeHtml(page.PREV_LABEL)}">›</button>
+                    aria-label="${Utils.escapeHtml(page.PREV_LABEL)}">‹</button>
             <div class="major-viewport" id="major-viewport">
               <div class="major-track" id="major-track">${cards}</div>
             </div>
             <button class="major-arrow ripple ripple-dark" id="major-next"
-                    aria-label="${Utils.escapeHtml(page.NEXT_LABEL)}">‹</button>
+                    aria-label="${Utils.escapeHtml(page.NEXT_LABEL)}">›</button>
           </div>
           <p class="signup-subtitle" style="margin-top:14px">
             ${Utils.escapeHtml(page.TAP_HINT)}
