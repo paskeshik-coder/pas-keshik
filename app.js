@@ -306,7 +306,8 @@ const MainApp = {
    * added before its screen exists without producing a dead tap.
    */
   SCREENS: {
-    search: SearchScreen
+    search: SearchScreen,
+    requests: RequestsScreen
   },
 
   /**
