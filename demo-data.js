@@ -468,7 +468,7 @@ const DemoStore = {
     const me = this.currentUserId();
     const now = Date.now();
     const profile = Utils.getLocalProfile() || {};
-    const windowMs = CONFIG.REQUESTS.ACCEPTED_VISIBLE_HOURS * 60 * 60 * 1000;
+    const ratingWindowMs = CONFIG.REQUESTS.RATING_WINDOW_HOURS * 60 * 60 * 1000;
 
     const mine = this._requests.filter(r =>
       r.ownerId === me &&
@@ -482,11 +482,25 @@ const DemoStore = {
       );
 
       if (accepted) {
-        // Visible for a fixed period after acceptance, then gone. Computed
-        // from the timestamp on each read rather than flipped by a timer.
-        const age = now - new Date(accepted.statusChangedAt).getTime();
-        if (age < windowMs) return { ...request, acceptedBid: accepted };
-        continue;
+        /*
+          An accepted request stays until its shift has ended — the same
+          boundary the bidder's side uses, so the two never disagree about when
+          the arrangement is over.
+
+          The rating button has its own, shorter window measured from
+          acceptance. Whether it is still offered is decided here rather than
+          in the screen, so there is one answer to the question instead of two
+          that could drift apart.
+        */
+        if (new Date(request.endsAt).getTime() <= now) continue;
+
+        const sinceAccepted = now - new Date(accepted.statusChangedAt).getTime();
+
+        return {
+          ...request,
+          acceptedBid: accepted,
+          canRate: sinceAccepted < ratingWindowMs
+        };
       }
 
       // Still open, as long as the shift has not begun.
