@@ -181,7 +181,8 @@ const DemoStore = {
     ACCEPTED: 'accepted',
     REJECTED: 'rejected',
     EXPIRED: 'expired',
-    CANCELLED: 'cancelled'
+    CANCELLED: 'cancelled',
+    WITHDRAWN: 'withdrawn'
   },
 
   /**
