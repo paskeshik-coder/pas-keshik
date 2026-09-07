@@ -579,7 +579,7 @@ const DemoStore = {
     };
   },
 
-  /**
+/**
    * Record a thumbs-up for the bidder on an accepted bid.
    *
    * @param {string} bidId
@@ -591,6 +591,89 @@ const DemoStore = {
       bid.rated = true;
       this._save();
     }
+  },
+
+  /**
+   * Withdraw a bid.
+   *
+   * Marked rather than removed. The all-time bid count reported by the admin
+   * statistics has to include offers that were later taken back, so nothing is
+   * ever deleted — withdrawn bids simply stop being displayed and stop
+   * counting toward the lowest price.
+   *
+   * @param {string} bidId
+   */
+  withdrawBid(bidId) {
+    this._load();
+    const bid = this._bids.find(b => b.id === bidId);
+    if (bid) {
+      bid.status = this.BID_STATUS.WITHDRAWN;
+      bid.statusChangedAt = new Date().toISOString();
+      this._save();
+    }
+  },
+
+  /**
+   * Every bid the signed-in user has placed, with its request attached and its
+   * real status worked out.
+   *
+   * TWO STATUSES, one stored and one effective. A bid can stop being live
+   * without anything having been written to it: its request may be cancelled,
+   * or the shift may simply begin. Rather than reaching into every bid to flip
+   * it at those moments — which would need something scheduled, and would
+   * quietly stop working the day that something failed — the real status is
+   * derived here on each read from the request it belongs to.
+   *
+   * @returns {object[]}  Bids, each with `status`, `statusSince` and `request`.
+   */
+  myBids() {
+    this._load();
+
+    const me = this.currentUserId();
+    const now = Date.now();
+    const settledWindow = CONFIG.OFFERS.SETTLED_VISIBLE_HOURS * 60 * 60 * 1000;
+
+    return this._bids
+      .filter(bid => bid.bidderId === me)
+      .filter(bid => bid.status !== this.BID_STATUS.WITHDRAWN)
+
+      .map(bid => {
+        const request = this._requests.find(r => r.id === bid.requestId);
+        if (!request) return null;
+
+        let status = bid.status;
+        let since = bid.statusChangedAt;
+
+        // A pending bid can be overtaken by events on its request.
+        if (status === this.BID_STATUS.PENDING) {
+          if (request.cancelledAt) {
+            status = this.BID_STATUS.CANCELLED;
+            since = request.cancelledAt;
+          } else if (new Date(request.startsAt).getTime() <= now) {
+            // The shift began with nobody accepted, so the offer lapsed. The
+            // moment it lapsed is the shift's own start time.
+            status = this.BID_STATUS.EXPIRED;
+            since = request.startsAt;
+          }
+        }
+
+        return { ...bid, status, statusSince: since, request };
+      })
+      .filter(Boolean)
+
+      .filter(entry => {
+        // Still awaiting an answer, so it stays as long as it takes.
+        if (entry.status === this.BID_STATUS.PENDING) return true;
+
+        // An accepted offer is a commitment, so it stays in front of the
+        // bidder until the shift they agreed to cover has finished.
+        if (entry.status === this.BID_STATUS.ACCEPTED) {
+          return new Date(entry.request.endsAt).getTime() > now;
+        }
+
+        // Everything else is history, kept briefly and then cleared away.
+        return now - new Date(entry.statusSince).getTime() < settledWindow;
+      });
   }
 
 };
