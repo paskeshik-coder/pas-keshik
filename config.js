@@ -275,6 +275,8 @@ const CONFIG = {
       TITLE: 'رشته تحصیلی',
       SUBTITLE: 'بکشید و انتخاب کنید',
       TAP_HINT: 'برای انتخاب، روی کارت بزنید',
+      PREV_LABEL: 'قبلی',
+      NEXT_LABEL: 'بعدی',
 
       /*
         To add a major: copy a line below, then add a matching icon under
@@ -301,6 +303,8 @@ const CONFIG = {
       TITLE: 'سال ورود',
       YEAR_LABEL: 'سال',
       SEMESTER_LABEL: 'نیمسال',
+      UP_LABEL: 'بالا',
+      DOWN_LABEL: 'پایین',
 
       /*
         The year list is computed from the current Persian year rather than
@@ -585,6 +589,50 @@ const CONFIG = {
         { id: 'psychiatry',label: 'روان‌پزشکی' }
       ]
     }
+  },
+  /* ==========================================================================
+     SECTION 10 — PRO TIER
+     Dormant. Nothing in the app is gated while ENABLED is false, and no Pro
+     wording appears anywhere. The structure exists so the tier can be switched
+     on later without touching screen code.
+     ====================================================================== */
+  PRO: {
+    /*
+      Master switch. While false, Pro.isActive always returns false, everyone
+      gets the FREE limits below, and no PRO_ONLY feature is available to
+      anyone — which is exactly today's behaviour, so flipping this to true is
+      purely additive.
+    */
+    ENABLED: false,
+
+    /*
+      Feature gates. Set PRO_ONLY to true to reserve a capability.
+
+      Nothing here is wired into a screen yet. When one is, the screen asks
+      Pro.can(profile, 'name') rather than testing the subscription directly,
+      so a decision to un-gate something later is one edit here.
+    */
+    FEATURES: {
+      selfBoost:     { PRO_ONLY: false },  // boost without needing invites
+      wardAlerts:    { PRO_ONLY: false },  // notify on matching new requests
+      bidderHistory: { PRO_ONLY: false }   // full history, not just like count
+    },
+
+    /*
+      Numeric limits. FREE values are what the app does today, so switching
+      the tier on cannot reduce anyone's existing capability.
+    */
+    LIMITS: {
+      activeRequests: { FREE: 1, PRO: 3 }
+    },
+
+    /*
+      Activation is manual for now: an admin command grants a number of days.
+      International card processors do not serve Iran, and local gateways need
+      a registered merchant account, so selling by hand comes first and a
+      gateway can be added later without changing how entitlement is stored.
+    */
+    DEFAULT_GRANT_DAYS: 30
   },
   GENERAL: {
     APP_NAME: 'پاس‌کشیک',
