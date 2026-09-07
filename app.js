@@ -190,33 +190,34 @@ const Screens = {
         `<div class="intro-dot ${index === 0 ? 'active' : ''}"></div>`
       ).join('');
 
+      /*
+        قبلی comes first in the markup so it lands on the right under RTL.
+        There is no separate start button: on the last page the forward button
+        relabels itself, which keeps قبلی in place throughout and means the
+        two can never disagree about which corner is forward.
+      */
       return `
         <div class="intro-viewport">
           <div class="intro-track" id="intro-track">${pagesHtml}</div>
         </div>
         <div class="intro-footer">
           <div class="intro-dots" id="intro-dots">${dotsHtml}</div>
-          <div class="intro-nav" id="intro-nav">
-            <button class="btn btn-primary btn-next ripple" id="intro-next">
-              ${Utils.escapeHtml(CONFIG.INTRO.NEXT_BUTTON)}
-            </button>
+          <div class="intro-nav">
             <button class="btn btn-flat btn-back ripple ripple-dark hidden" id="intro-back">
               ${Utils.escapeHtml(CONFIG.INTRO.BACK_BUTTON)}
             </button>
+            <button class="btn btn-primary btn-next ripple" id="intro-next">
+              ${Utils.escapeHtml(CONFIG.INTRO.NEXT_BUTTON)}
+            </button>
           </div>
-          <button class="btn btn-primary ripple" id="intro-start" style="display:none">
-            ${Utils.escapeHtml(CONFIG.INTRO.START_BUTTON)}
-          </button>
         </div>`;
     },
 
     mount() {
       const track     = document.getElementById('intro-track');
       const dots      = [...document.querySelectorAll('.intro-dot')];
-      const nav       = document.getElementById('intro-nav');
       const nextBtn   = document.getElementById('intro-next');
       const backBtn   = document.getElementById('intro-back');
-      const startBtn  = document.getElementById('intro-start');
       const lastIndex = CONFIG.INTRO.PAGES.length - 1;
 
       this.pageIndex = 0;
@@ -236,22 +237,24 @@ const Screens = {
 
         backBtn.classList.toggle('hidden', this.pageIndex === 0);
 
-        // On the last page the نavigation row gives way to the start button,
-        // in the same slot, so nothing below it moves.
-        const onLastPage = (this.pageIndex === lastIndex);
-        nav.style.display = onLastPage ? 'none' : '';
-        startBtn.style.display = onLastPage ? '' : 'none';
+        // On the last page the forward button becomes the call to action.
+        // Relabelling one button rather than swapping in a second means قبلی
+        // never moves and nothing below the row shifts.
+        nextBtn.textContent = (this.pageIndex === lastIndex)
+          ? CONFIG.INTRO.START_BUTTON
+          : CONFIG.INTRO.NEXT_BUTTON;
       };
 
       nextBtn.addEventListener('click', () => {
-        if (this.pageIndex < lastIndex) { this.pageIndex++; apply(); }
+        // Same button, two jobs, decided by where the user is.
+        if (this.pageIndex === lastIndex) { App.go('signup'); return; }
+        this.pageIndex++;
+        apply();
       });
 
       backBtn.addEventListener('click', () => {
         if (this.pageIndex > 0) { this.pageIndex--; apply(); }
       });
-
-      startBtn.addEventListener('click', () => App.go('signup'));
 
       apply();
     }
