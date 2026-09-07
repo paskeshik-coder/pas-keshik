@@ -259,10 +259,22 @@ const DemoStore = {
       }))
 
       .sort((a, b) => {
+        // Boosted requests sit above everything, regardless of urgency. That
+        // is what the boost is.
         const aBoosted = a.boostedUntil && new Date(a.boostedUntil).getTime() > now;
         const bBoosted = b.boostedUntil && new Date(b.boostedUntil).getTime() > now;
         if (aBoosted !== bBoosted) return aBoosted ? -1 : 1;
-        return new Date(b.createdAt) - new Date(a.createdAt);
+
+        /*
+          Then soonest shift first, rather than most recently posted.
+
+          Newest-first was the original rule, and it stopped making sense once
+          the one-week expiry was removed: a shift six months away posted this
+          morning would outrank a shift tomorrow posted last week. Sorting by
+          when the shift actually begins puts the requests that are running out
+          of time at the top, which is what someone scanning the board needs.
+        */
+        return new Date(a.startsAt) - new Date(b.startsAt);
       });
   },
 
