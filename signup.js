@@ -24,6 +24,13 @@
  *   - on blur, to actually display an error message
  * Showing errors while someone is still typing their own name means being
  * told it is wrong before they have finished writing it.
+ *
+ * NO SWIPING ANYWHERE
+ * The major carousel and the value wheels are driven by buttons. Inside a
+ * Telegram Mini App a horizontal drag can be claimed by the platform's own
+ * back gesture and close the whole app, which is unrecoverable and looks to
+ * the user like a crash. Buttons cannot be intercepted. The sliding animation
+ * is kept — only the input method changed.
  * ============================================================================
  */
 
@@ -34,6 +41,15 @@ const SignUp = {
 
   /** Zero-based index of the visible page. */
   pageIndex: 0,
+
+  /**
+   * The resize handler currently attached for the major carousel.
+   *
+   * Held so it can be removed before a new one is attached. Without this,
+   * every visit to the major page would leave another listener behind, all
+   * firing on the same event against elements that no longer exist.
+   */
+  _majorResizeHandler: null,
 
 
   /* ========================================================================
@@ -77,7 +93,7 @@ const SignUp = {
         const page = CONFIG.SIGNUP.PAGE_NAME;
         const data = SignUp.data;
 
-        // The `field` helper builds a labelled input with a hint slot below.
+        // Builds a labelled input with a hint slot below it.
         const field = (id, label, value) => `
           <div class="field">
             <label class="field-label" for="${id}">${Utils.escapeHtml(label)}</label>
@@ -152,88 +168,106 @@ const SignUp = {
           </div>
         `).join('');
 
+        /*
+          Button order matters under right-to-left layout.
+
+          In a flex row with dir="rtl" the FIRST child appears on the right.
+          Cards also run right to left, so advancing to the next major moves
+          the track leftward. The forward button therefore has to be the last
+          child — landing on the left — and point left. Putting them the other
+          way round produces arrows that point away from the direction they
+          actually move.
+        */
         return `
           <h2 class="signup-title">${Utils.escapeHtml(page.TITLE)}</h2>
           <p class="signup-subtitle">${Utils.escapeHtml(page.SUBTITLE)}</p>
-          <div class="major-track" id="major-track">
-            <div class="major-spacer"></div>${cards}<div class="major-spacer"></div>
+          <div class="major-carousel">
+            <button class="major-arrow ripple ripple-dark" id="major-prev"
+                    aria-label="${Utils.escapeHtml(page.PREV_LABEL)}">›</button>
+            <div class="major-viewport" id="major-viewport">
+              <div class="major-track" id="major-track">${cards}</div>
+            </div>
+            <button class="major-arrow ripple ripple-dark" id="major-next"
+                    aria-label="${Utils.escapeHtml(page.NEXT_LABEL)}">‹</button>
           </div>
-          <p class="signup-subtitle" style="margin-top:16px">
+          <p class="signup-subtitle" style="margin-top:14px">
             ${Utils.escapeHtml(page.TAP_HINT)}
           </p>`;
       },
 
       mount() {
-        const track = document.getElementById('major-track');
-        const cards = [...track.querySelectorAll('.major-card')];
+        const majors   = CONFIG.SIGNUP.PAGE_MAJOR.MAJORS;
+        const track    = document.getElementById('major-track');
+        const viewport = document.getElementById('major-viewport');
+        const cards    = [...track.querySelectorAll('.major-card')];
+        const nextBtn  = document.getElementById('major-next');
+        const prevBtn  = document.getElementById('major-prev');
 
-        /**
-         * Scale and fade each card by how far it sits from the centre.
-         *
-         * Positions are measured with getBoundingClientRect rather than from
-         * scrollLeft, because scrollLeft's sign and origin differ between
-         * left-to-right and right-to-left layouts. Screen coordinates behave
-         * identically in both.
-         */
-        const applyDepth = () => {
-          const trackCentre = track.getBoundingClientRect().left
-                            + track.getBoundingClientRect().width / 2;
+        // Which card is centred. Selection is separate: centring only brings a
+        // card into view, and a tap on it confirms the choice.
+        let index = Math.max(0, majors.findIndex(m => m.id === SignUp.data.major));
 
-          cards.forEach(card => {
+        /*
+          How far to slide the track to centre each card, measured once.
+
+          Measured rather than calculated from card widths, because under
+          right-to-left layout the direction of increasing position is
+          reversed and the arithmetic would need to know which way round it
+          is. Screen coordinates read the same in both directions.
+        */
+        let offsets = [];
+
+        const measure = () => {
+          // Suppress the transition while measuring, or resetting to zero
+          // would animate visibly before the real offset is applied.
+          track.style.transition = 'none';
+          track.style.transform = 'translateX(0px)';
+
+          const viewRect = viewport.getBoundingClientRect();
+          const centre = viewRect.left + viewRect.width / 2;
+
+          offsets = cards.map(card => {
             const rect = card.getBoundingClientRect();
-            const cardCentre = rect.left + rect.width / 2;
-            // Distance expressed in card-widths, so it is resolution independent.
-            const distance = Math.min(
-              Math.abs(cardCentre - trackCentre) / rect.width, 1
-            );
-            card.style.transform = `scale(${1 - distance * 0.18})`;
-            card.style.opacity   = String(1 - distance * 0.55);
+            return centre - (rect.left + rect.width / 2);
           });
+
+          // Reading offsetWidth forces the browser to lay the page out, which
+          // commits the zero position. Only then can the transition be turned
+          // back on without the first real move animating from the wrong place.
+          void track.offsetWidth;
+          track.style.transition = '';
         };
 
-        track.addEventListener('scroll', () => {
-          requestAnimationFrame(applyDepth);
-        }, { passive: true });
+        /** Slide to the current card and restyle every card by its distance. */
+        const apply = () => {
+          track.style.transform = `translateX(${offsets[index] || 0}px)`;
 
-        /**
-         * Which card is currently nearest the middle of the track.
-         *
-         * Asked as a comparison between cards rather than as an absolute
-         * distance threshold. A fixed threshold assumes a card can always
-         * settle exactly on centre, and any residue — a rounding difference,
-         * a spacer a pixel out — leaves the first and last cards permanently
-         * "not centred enough" and therefore permanently unselectable. Whoever
-         * is closest is always somebody, so this cannot get stuck.
-         *
-         * @returns {number}  Index into `cards`.
-         */
-        const centredIndex = () => {
-          const tRect = track.getBoundingClientRect();
-          const trackCentre = tRect.left + tRect.width / 2;
-
-          let best = 0, bestDistance = Infinity;
           cards.forEach((card, i) => {
-            const rect = card.getBoundingClientRect();
-            const distance = Math.abs((rect.left + rect.width / 2) - trackCentre);
-            if (distance < bestDistance) { bestDistance = distance; best = i; }
+            const distance = Math.min(Math.abs(i - index), 2);
+            card.style.transform = `scale(${1 - distance * 0.14})`;
+            card.style.opacity = String(1 - distance * 0.45);
           });
-          return best;
+
+          // Disabled rather than hidden at the ends, so the row keeps its
+          // width and the cards do not shift sideways.
+          nextBtn.disabled = (index >= cards.length - 1);
+          prevBtn.disabled = (index <= 0);
         };
 
-        cards.forEach((card, index) => {
+        const move = step => {
+          index = Math.min(cards.length - 1, Math.max(0, index + step));
+          apply();
+        };
+
+        nextBtn.addEventListener('click', () => move(1));
+        prevBtn.addEventListener('click', () => move(-1));
+
+        cards.forEach((card, i) => {
           card.addEventListener('click', () => {
-            // Tapping a card that is off to one side means "bring this one
-            // over", not "choose it" — selecting something half off the screen
-            // is almost always a mis-tap.
-            if (index !== centredIndex()) {
-              const rect  = card.getBoundingClientRect();
-              const tRect = track.getBoundingClientRect();
-              track.scrollBy({
-                left: (rect.left + rect.width / 2) - (tRect.left + tRect.width / 2),
-                behavior: 'smooth'
-              });
-              return;
-            }
+            // A tap on a card off to one side means "bring this one over", not
+            // "choose it" — selecting something half out of view is almost
+            // always a mis-tap.
+            if (i !== index) { index = i; apply(); return; }
 
             cards.forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
@@ -242,18 +276,22 @@ const SignUp = {
           });
         });
 
-        // Open on the previously chosen card, or the first one.
-        const startIndex = Math.max(
-          0, CONFIG.SIGNUP.PAGE_MAJOR.MAJORS.findIndex(m => m.id === SignUp.data.major)
-        );
-        requestAnimationFrame(() => {
-          const card  = cards[startIndex];
-          const rect  = card.getBoundingClientRect();
-          const tRect = track.getBoundingClientRect();
-          track.scrollLeft += (rect.left + rect.width / 2)
-                            - (tRect.left + tRect.width / 2);
-          applyDepth();
-        });
+        // Measure after the first paint, when the cards have real widths.
+        requestAnimationFrame(() => { measure(); apply(); });
+
+        /*
+          Rotating the phone changes every width, so the cached offsets have to
+          be taken again or the track settles in the wrong place.
+
+          The previous handler is removed first. Adding one per visit without
+          removing would leave a growing pile of listeners, all firing on the
+          same event against elements that have since been replaced.
+        */
+        if (SignUp._majorResizeHandler) {
+          window.removeEventListener('resize', SignUp._majorResizeHandler);
+        }
+        SignUp._majorResizeHandler = () => { measure(); apply(); };
+        window.addEventListener('resize', SignUp._majorResizeHandler);
       },
 
       isValid() { return Boolean(SignUp.data.major); }
@@ -286,7 +324,7 @@ const SignUp = {
 
         return `
           <h2 class="signup-title">${Utils.escapeHtml(page.TITLE)}</h2>
-          <div style="margin-top:20px">
+          <div style="margin-top:14px">
             ${SignUp.renderWheel('year', page.YEAR_LABEL, yearItems, 5)}
             ${SignUp.renderWheel('semester', page.SEMESTER_LABEL, semesterItems, 3)}
           </div>`;
@@ -447,7 +485,6 @@ const SignUp = {
     {
       render() {
         const page = CONFIG.SIGNUP.PAGE_CONTACT;
-
         const stored = SignUp.data.phone || '';
 
         return `
@@ -514,6 +551,7 @@ const SignUp = {
           input.setSelectionRange(cursorBefore + shift, cursorBefore + shift);
 
           SignUp.data.phone = digits;
+
           row.classList.remove('invalid');
           hint.classList.remove('error');
           hint.textContent = page.PHONE_HINT;
@@ -595,13 +633,16 @@ const SignUp = {
   /* ========================================================================
      WHEEL COMPONENT
      Shared by the year and semester pickers, and available to the Jalali date
-     picker later. Built on native scroll-snap, which supplies real flick
-     momentum and rubber-banding that a hand-written drag handler would only
-     imitate.
+     picker later.
+
+     Moved by transform rather than scrolled. A scroll container would have
+     worked here, since vertical gestures do not collide with the platform
+     back gesture — but the carousel had to abandon scrolling, and one
+     consistent mechanism is easier to reason about than two.
      ==================================================================== */
 
-  // Height of one row, in pixels. Also the snap interval.
-  WHEEL_ITEM_HEIGHT: 46,
+  // Height of one row, in pixels.
+  WHEEL_ITEM_HEIGHT: 42,
 
   /**
    * Build a wheel's markup.
@@ -609,15 +650,14 @@ const SignUp = {
    * @param   {string} name          Identifier, used for the element ids.
    * @param   {string} caption       Label shown above the wheel.
    * @param   {Array}  items         [{value, label}, ...] top to bottom.
-   * @param   {number} visibleRows   How many rows are on screen. Must be odd,
-   *                                 so exactly one row can sit in the middle.
+   * @param   {number} visibleRows   Rows on screen. Must be odd, so exactly
+   *                                 one row can sit in the middle.
    * @returns {string}               HTML.
    */
   renderWheel(name, caption, items, visibleRows) {
     const rowHeight = this.WHEEL_ITEM_HEIGHT;
     const height    = rowHeight * visibleRows;
-    // Empty space above and below, so the first and last values can reach the
-    // centre rather than stopping at the wheel's edge.
+    // Distance from the top of the wheel down to the selected row.
     const padding   = rowHeight * ((visibleRows - 1) / 2);
 
     const rows = items.map(item =>
@@ -625,23 +665,29 @@ const SignUp = {
             style="height:${rowHeight}px">${Utils.escapeHtml(item.label)}</div>`
     ).join('');
 
+    const labels = CONFIG.SIGNUP.PAGE_YEAR;
+
     return `
       <div class="wheel-group">
         <div class="wheel-caption">${Utils.escapeHtml(caption)}</div>
+        <button class="wheel-arrow ripple ripple-dark" id="wheel-up-${name}"
+                aria-label="${Utils.escapeHtml(labels.UP_LABEL)}">▲</button>
         <div class="wheel" id="wheel-${name}" style="height:${height}px">
           <div class="wheel-band"
                style="top:${padding}px;height:${rowHeight}px"></div>
-          <div class="wheel-scroll" id="wheel-scroll-${name}">
-            <div class="wheel-pad" style="height:${padding}px"></div>
-            ${rows}
-            <div class="wheel-pad" style="height:${padding}px"></div>
-          </div>
+          <div class="wheel-track" id="wheel-track-${name}"
+               style="transform:translateY(${padding}px)">${rows}</div>
         </div>
+        <button class="wheel-arrow ripple ripple-dark" id="wheel-down-${name}"
+                aria-label="${Utils.escapeHtml(labels.DOWN_LABEL)}">▼</button>
       </div>`;
   },
 
   /**
-   * Activate a wheel: set its starting row and report changes.
+   * Activate a wheel: set its starting row, wire its arrows, report changes.
+   *
+   * Row offsets need no measurement, unlike the carousel: rows are a fixed
+   * height set in this same file, so position is arithmetic.
    *
    * @param {string}   name          Must match the name given to renderWheel.
    * @param {number}   visibleRows   Must match too.
@@ -650,41 +696,51 @@ const SignUp = {
    */
   mountWheel(name, visibleRows, startIndex, onChange) {
     const rowHeight = this.WHEEL_ITEM_HEIGHT;
-    const scroller  = document.getElementById('wheel-scroll-' + name);
-    const rows      = [...scroller.querySelectorAll('.wheel-item')];
+    const padding   = rowHeight * ((visibleRows - 1) / 2);
 
-    /**
-     * Restyle every row by its distance from the centre and report the value
-     * now sitting under the marker.
-     */
-    const update = () => {
-      const centreIndex = Math.round(scroller.scrollTop / rowHeight);
+    const track   = document.getElementById('wheel-track-' + name);
+    const rows    = [...track.querySelectorAll('.wheel-item')];
+    const upBtn   = document.getElementById('wheel-up-' + name);
+    const downBtn = document.getElementById('wheel-down-' + name);
+
+    let index = Math.min(rows.length - 1, Math.max(0, startIndex));
+
+    /** Move the track, restyle the rows, and report the selected value. */
+    const apply = () => {
+      track.style.transform = `translateY(${padding - index * rowHeight}px)`;
 
       rows.forEach((row, i) => {
-        const distance = Math.abs(i - centreIndex);
+        const distance = Math.abs(i - index);
         row.style.opacity   = String(Math.max(0.25, 1 - distance * 0.32));
         row.style.transform = `scale(${Math.max(0.72, 1 - distance * 0.13)})`;
       });
 
-      const chosen = rows[Math.max(0, Math.min(rows.length - 1, centreIndex))];
-      if (chosen) onChange(chosen.dataset.value);
+      upBtn.disabled   = (index <= 0);
+      downBtn.disabled = (index >= rows.length - 1);
+
+      onChange(rows[index].dataset.value);
     };
 
-    scroller.addEventListener('scroll', () => {
-      requestAnimationFrame(update);
-    }, { passive: true });
+    const move = step => {
+      index = Math.min(rows.length - 1, Math.max(0, index + step));
+      apply();
+    };
 
-    // Position on the starting row before the first paint, so the wheel never
-    // appears at the top and then jumps.
-    requestAnimationFrame(() => {
-      scroller.scrollTop = startIndex * rowHeight;
-      update();
+    upBtn.addEventListener('click',   () => move(-1));
+    downBtn.addEventListener('click', () => move(1));
+
+    // Tapping a visible row jumps straight to it, so reaching a distant value
+    // does not mean repeatedly pressing an arrow.
+    rows.forEach((row, i) => {
+      row.addEventListener('click', () => { index = i; apply(); });
     });
+
+    apply();
   },
 
 
   /* ========================================================================
-     WIZARD SHELL
+     DECORATIVE MOTIF
      ==================================================================== */
 
   /**
@@ -744,6 +800,12 @@ const SignUp = {
       ? `${decor.DOT_INSET_X}px`
       : `calc(100% - ${decor.DOT_INSET_X + decor.DOT_SIZE}px)`;
   },
+
+
+  /* ========================================================================
+     WIZARD SHELL
+     ==================================================================== */
+
   /** Reset and open the wizard at page one. */
   start() {
     this.data = {};
@@ -770,7 +832,10 @@ const SignUp = {
    * Render the current page into the wizard shell.
    *
    * Only the body is replaced, not the whole screen, so the progress bar keeps
-   * its width and animates smoothly from one page to the next.
+   * its width and the decorative motif keeps moving across the swap.
+   *
+   * @param {boolean} animate  False on first entry, which has nothing to fade
+   *                           out of.
    */
   async showPage(animate = true) {
     const decor = CONFIG.SIGNUP.DECOR;
@@ -854,13 +919,18 @@ const SignUp = {
       city:           SignUp.data.city,
       phone:          SignUp.data.phone,
       inviteCode:     SignUp.data.inviteCode || null,
-      createdAt:      new Date().toISOString()
+      createdAt:      new Date().toISOString(),
+
+      // Pro tier, dormant. Null means no subscription, which is every user
+      // today. Present from the start so the field does not have to be
+      // backfilled across existing records when the tier is switched on.
+      proUntil:       null
     };
 
     Utils.saveLocalProfile(profile);
 
     // Temporary confirmation, so the collected values can be checked against
-    // what was actually entered. Replaced by the main app in the next slice.
+    // what was actually entered. Replaced by the main app in a later slice.
     const majorLabel = CONFIG.SIGNUP.PAGE_MAJOR.MAJORS
       .find(m => m.id === profile.major)?.label || '—';
     const semesterLabel = CONFIG.SIGNUP.PAGE_YEAR.SEMESTERS
