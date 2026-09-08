@@ -189,23 +189,16 @@ const RequestsScreen = {
     const contact = DemoStore.contactForBid(bid.id);
     if (!contact) return this.renderCard(request, 'accepted', text.ACCEPTED_TITLE);
 
-    /*
-      Three states, not two. The card now outlives the rating window, so
-      "already rated" and "the window has closed" are different situations and
-      neither should show a button.
-
-      Whether the window is still open was decided by the data layer, so this
-      screen only reads the answer.
-    */
+    // Two states only. The button is offered for as long as this card exists,
+    // which is until the shift ends, so the sole question is whether the
+    // rating has already been given.
     const rateHtml = bid.rated
       ? `<div class="rate-done">${Utils.escapeHtml(text.RATED_MESSAGE)}</div>`
-      : (request.canRate
-          ? `<div class="rate-row">
-               <button class="rate-btn ripple ripple-dark" data-rate="${bid.id}">
-                 👍 ${Utils.escapeHtml(text.RATE_BUTTON)}
-               </button>
-             </div>`
-          : '');
+      : `<div class="rate-row">
+           <button class="rate-btn ripple ripple-dark" data-rate="${bid.id}">
+             👍 ${Utils.escapeHtml(text.RATE_BUTTON)}
+           </button>
+         </div>`;
 
     return this.renderCard(request, 'accepted', text.ACCEPTED_TITLE)
       + `<div class="req-card">
