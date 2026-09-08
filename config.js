@@ -683,20 +683,18 @@ const CONFIG = {
     RATED_MESSAGE: 'ممنون از بازخورد شما',
 
     /*
-      An accepted request stays on screen until its shift has ended, matching
-      what the bidder sees on their side.
+      An accepted request stays on screen until its shift has ended, and so
+      does the rating button. There is no separate window for either.
 
-      It was 24 hours from acceptance, which broke down for a shift more than a
-      day away: the requester lost the contact details of the person covering
-      it before the shift had even happened, while the bidder kept theirs.
-      Ending both at the same moment means neither side is left holding a
-      commitment they can no longer look up.
+      Both were once measured in hours from acceptance, which broke down for a
+      shift more than a day away: the requester lost the contact details — and
+      the ability to say the cover went well — before the shift had even
+      happened. Tying everything to the end of the shift means the whole
+      arrangement stays visible for exactly as long as it exists.
 
-      RATING is separate and stays at 24 hours. Its window starts at
-      acceptance, since the point is a prompt reaction to the exchange rather
-      than a verdict on the shift itself.
+      To give rating its own shorter window later, add a duration here and
+      compare it against the bid's statusChangedAt in DemoStore.myRequest.
     */
-    RATING_WINDOW_HOURS: 24
   },
 
 
