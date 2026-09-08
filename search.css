@@ -271,7 +271,16 @@
 .bid-amount-row.focused { border-color: var(--brand); background: var(--surface); }
 .bid-amount-row.invalid { border-color: var(--danger); }
 
-#bid-input {
+/*
+  Any input inside a bid row, rather than one specific id.
+
+  This was written as #bid-input, which meant the identical sheet on
+  پیشنهادهای من — using a different id — got no styling at all and fell back
+  to the browser's default input rendering. Selecting on structure means every
+  bid sheet looks the same by construction, instead of by remembering to add
+  each new id here.
+*/
+.bid-amount-row input {
   flex: 1;
   min-width: 0;
   height: 54px;
@@ -284,6 +293,12 @@
   color: var(--text-primary);
   padding: 0 14px;
   text-align: center;
+}
+
+.bid-amount-row input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+  font-size: 16px;
 }
 
 .bid-currency {
