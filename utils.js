@@ -247,6 +247,87 @@ const Utils = {
     } catch (error) {
       console.warn('Could not save local profile:', error);
     }
+  },
+
+  /**
+   * Generate an invite code.
+   *
+   * Six characters, mixed case, so the space is large enough that codes cannot
+   * be guessed by trying a few. Case is significant — K7mR2X and k7mr2x are
+   * different codes.
+   *
+   * Visually confusable characters are left out: 0 and O, 1 and l and I. The
+   * code has to survive being read off one screen and typed into another, and
+   * a character that cannot be told apart from another turns a working code
+   * into a support message.
+   *
+   * crypto.getRandomValues rather than Math.random, because Math.random is not
+   * required to be unpredictable and codes generated in the same millisecond
+   * on the same device should not be correlated.
+   *
+   * @returns {string}  A six-character code.
+   */
+  generateInviteCode() {
+    const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    const bytes = new Uint32Array(6);
+    crypto.getRandomValues(bytes);
+
+    let code = '';
+    for (const value of bytes) code += alphabet[value % alphabet.length];
+    return code;
+  },
+
+  /**
+   * Notification preferences for this device.
+   *
+   * Stage 2 keeps these locally so the switches work and remember. Stage 3
+   * moves them to the user's row, where the bot can read them before sending.
+   * Both switches default to on: someone who has not expressed a preference
+   * wants to hear that their bid was accepted.
+   *
+   * @returns {{newBid: boolean, bidAccepted: boolean}}
+   */
+  getNotificationPrefs() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('paskeshik_notify') || 'null');
+      return { newBid: true, bidAccepted: true, ...(saved || {}) };
+    } catch {
+      return { newBid: true, bidAccepted: true };
+    }
+  },
+
+  /** Save notification preferences. @param {object} prefs */
+  saveNotificationPrefs(prefs) {
+    try {
+      localStorage.setItem('paskeshik_notify', JSON.stringify(prefs));
+    } catch (error) {
+      console.warn('Could not save notification preferences:', error);
+    }
+  },
+
+  /**
+   * Copy text to the clipboard.
+   *
+   * The modern clipboard API is unavailable outside a secure context and on
+   * some in-app browsers, so a hidden textarea and the legacy command stand in
+   * when it is missing. Copying is the whole point of the buttons that call
+   * this, so it has to work everywhere rather than only where convenient.
+   *
+   * @param {string} value
+   */
+  async copyToClipboard(value) {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      const field = document.createElement('textarea');
+      field.value = value;
+      // Kept out of view and non-interactive, so it never flashes on screen.
+      field.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+      document.body.appendChild(field);
+      field.select();
+      document.execCommand('copy');
+      field.remove();
+    }
   }
 
 };
