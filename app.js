@@ -60,17 +60,34 @@ const Theme = {
   },
 
   /**
-   * Decide which palette to start in.
+   * Follow the platform's light or dark setting, with no in-app override.
    *
-   * Order of preference: the user's saved manual choice, then Telegram's own
-   * setting, then light. The manual choice wins because an explicit decision
-   * should always outrank an inherited default.
+   * Inside Telegram that means Telegram's own scheme, and Telegram tells us
+   * when it changes so the app can follow without a reload.
+   *
+   * Outside Telegram — which is where all of Stage 2 is being reviewed — it
+   * means the phone's own setting, read through a media query. Without that
+   * fallback "automatic" would mean "always light" during development, and
+   * dark mode would never be seen until Stage 3.
    */
   initialise() {
-    const savedPreference = localStorage.getItem('paskeshik_theme');
-    const telegramScheme  = window.Telegram?.WebApp?.colorScheme;
+    const telegram = window.Telegram?.WebApp;
+    const insideTelegram = telegram && telegram.platform !== 'unknown';
 
-    this.apply(savedPreference || telegramScheme || 'light');
+    const systemDark = window.matchMedia?.('(prefers-color-scheme: dark)');
+
+    const currentScheme = () => insideTelegram
+      ? (telegram.colorScheme || 'light')
+      : (systemDark?.matches ? 'dark' : 'light');
+
+    this.apply(currentScheme());
+
+    // Follow changes made while the app is open, rather than only at startup.
+    if (insideTelegram) {
+      telegram.onEvent?.('themeChanged', () => this.apply(currentScheme()));
+    } else {
+      systemDark?.addEventListener?.('change', () => this.apply(currentScheme()));
+    }
   }
 };
 
@@ -308,7 +325,10 @@ const MainApp = {
   SCREENS: {
     search: SearchScreen,
     requests: RequestsScreen,
-    offers: OffersScreen
+    offers: OffersScreen,
+    invite: InviteScreen,
+    contact: ContactScreen,
+    settings: SettingsScreen
   },
 
   /**
