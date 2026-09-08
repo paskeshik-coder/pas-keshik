@@ -812,6 +812,116 @@ const CONFIG = {
     */
     SETTLED_VISIBLE_HOURS: 24
   },
+  /* ==========================================================================
+     SECTION 14 — SETTINGS AND PROFILE
+     ====================================================================== */
+  SETTINGS: {
+    PROFILE_TITLE: 'ویرایش پروفایل',
+    PROFILE_SUBTITLE: 'نام، دانشگاه و سایر اطلاعات شما',
+
+    NOTIFICATIONS_TITLE: 'اعلان‌ها',
+    NOTIFY_NEW_BID: 'اعلان پیشنهاد جدید',
+    NOTIFY_NEW_BID_NOTE: 'وقتی کسی روی درخواست شما پیشنهاد می‌دهد',
+    NOTIFY_ACCEPTED: 'اعلان پذیرش پیشنهاد',
+    NOTIFY_ACCEPTED_NOTE: 'وقتی پیشنهاد شما پذیرفته می‌شود',
+
+    // Explains why there is no dark-mode control, so its absence reads as a
+    // decision rather than something missing.
+    THEME_NOTE: 'حالت روشن و تاریک برنامه به‌صورت خودکار با تنظیمات تلگرام شما هماهنگ می‌شود.'
+  },
+
+  PROFILE: {
+    TITLE: 'ویرایش پروفایل',
+
+    FIRST_LABEL: 'نام',
+    LAST_LABEL: 'نام خانوادگی',
+    YEAR_LABEL: 'سال ورود',
+    SEMESTER_LABEL: 'نیمسال ورود',
+    UNIVERSITY_LABEL: 'دانشگاه',
+    MAJOR_LABEL: 'رشته',
+    PHONE_LABEL: 'شماره تلفن همراه',
+    CITY_LABEL: 'شهر',
+    CITY_NOTE: 'شهر شما از روی دانشگاه انتخاب‌شده تعیین می‌شود.',
+
+    SEARCH_PLACEHOLDER: 'جستجو کنید',
+    SAVE_BUTTON: 'ذخیره تغییرات',
+    CANCEL_BUTTON: 'انصراف',
+    SAVED_MESSAGE: 'تغییرات ذخیره شد.',
+
+    // Blocked on save rather than on open: someone may want to look at their
+    // details without changing them, and refusing to show a read-only screen
+    // would be obstructive.
+    BLOCKED_MESSAGE: 'ابتدا درخواست فعال خود را لغو کنید.',
+
+    /*
+      Changing رشته or شهر changes which requests exist for this user at all,
+      so it is worth warning about before it happens rather than leaving them
+      to discover an unfamiliar board.
+    */
+    SCOPE_WARNING: 'با تغییر رشته یا دانشگاه، کشیک‌هایی که می‌بینید تغییر می‌کند و پیشنهادهای فعلی شما حذف می‌شوند. ادامه می‌دهید؟'
+  },
+
+
+  /* ==========================================================================
+     SECTION 15 — INVITE CODE
+     ====================================================================== */
+  INVITE: {
+    TITLE: 'کد دعوت شما',
+    CODE_NOTE: 'این کد مخصوص شماست و هرگز تغییر نمی‌کند.',
+    COPY_CODE: 'کپی کد',
+    COPIED: 'کپی شد',
+
+    CREDITS_LABEL: 'امتیاز نمایش درخواست در بالای لیست',
+    CREDITS_NONE: 'در حال حاضر امتیازی ندارید.',
+    CREDITS_UNIT: 'امتیاز استفاده‌نشده',
+
+    HOW_TITLE: 'چطور کار می‌کند؟',
+    HOW_TEXT: 'هر بار که کسی با کد شما ثبت‌نام کند، یک امتیاز دریافت می‌کنید. با هر امتیاز، درخواست بعدی شما به مدت ۳ روز در بالای لیست جستجو نمایش داده می‌شود — یعنی افراد بیشتری آن را می‌بینند و شانس دریافت پیشنهاد بیشتر می‌شود. امتیازها ذخیره می‌شوند و به ترتیب روی درخواست‌های بعدی شما اعمال می‌گردند.',
+
+    LETTER_TITLE: 'متن دعوت',
+    LETTER_NOTE: 'این متن را کپی کنید و برای دوستان خود بفرستید.',
+    COPY_LETTER: 'کپی متن دعوت',
+
+    /*
+      Draft. [CODE] and [LINK] are replaced when the letter is shown, so the
+      wording can be rewritten freely as long as those two markers survive.
+    */
+    LETTER: 'سلام 👋\n\nمن از «پاس‌کشیک» استفاده می‌کنم — یک برنامه‌ی تلگرامی برای جابجایی کشیک بین کارورزان پزشکی، پرستاری، مامایی و داروسازی.\n\nاگر کشیکی داری که نمی‌توانی انجام بدهی، آن را ثبت می‌کنی و بقیه برای پوشش دادنش قیمت پیشنهاد می‌دهند. اگر هم دنبال کشیک اضافه هستی، می‌توانی روی کشیک دیگران پیشنهاد بدهی.\n\nنام و شماره‌ات تا وقتی خودت یک پیشنهاد را نپذیری، برای هیچ‌کس نمایش داده نمی‌شود.\n\nموقع ثبت‌نام این کد دعوت را وارد کن:\n[CODE]\n\nلینک ربات:\n[LINK]',
+
+    // Replace once the bot exists in Stage 3.
+    BOT_LINK: 'https://t.me/PasKeshikBot'
+  },
+
+
+  /* ==========================================================================
+     SECTION 16 — CONTACT
+     ====================================================================== */
+  CONTACT: {
+    TITLE: 'پیشنهادات یا گزارش مشکل',
+    INTRO: 'اگر پیشنهادی برای بهتر شدن پاس‌کشیک دارید یا به مشکلی برخورده‌اید، برای ما بنویسید.',
+
+    SUBJECT_LABEL: 'موضوع',
+    SUBJECTS: [
+      { id: 'bug',     label: 'گزارش مشکل' },
+      { id: 'idea',    label: 'پیشنهاد' },
+      { id: 'account', label: 'مشکل حساب کاربری' },
+      { id: 'other',   label: 'سایر' }
+    ],
+
+    MESSAGE_LABEL: 'متن پیام',
+    MESSAGE_PLACEHOLDER: 'توضیح دهید...',
+    MESSAGE_MAX: 1000,
+
+    SEND_BUTTON: 'ارسال از طریق ایمیل',
+    ERROR_EMPTY: 'متن پیام را بنویسید',
+
+    // The form composes a message and hands it to the mail app; nothing is
+    // sent from inside the app, so this says so plainly rather than implying
+    // a send that will not happen here.
+    NOTE: 'با زدن دکمه، برنامه ایمیل شما باز می‌شود و متن به‌صورت آماده در آن قرار می‌گیرد.',
+
+    EMAIL: 'PasKeshik@gmail.com'
+  },
   GENERAL: {
     APP_NAME: 'پاس‌کشیک',
 
