@@ -1,0 +1,283 @@
+/*
+  ============================================================================
+  پاس‌کشیک — SETTINGS, INVITE AND CONTACT  (misc.css)
+  Three small screens sharing one stylesheet, since none is large enough to
+  justify a file of its own.
+  ============================================================================
+*/
+
+.misc-screen { padding: 14px 14px 28px; }
+
+.misc-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin: 18px 4px 8px;
+}
+.misc-screen > .misc-section-title:first-child { margin-top: 4px; }
+
+.misc-card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+/* A tappable row inside a card. */
+.misc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 16px;
+  text-align: start;
+  border-bottom: 1px solid var(--divider);
+}
+.misc-row:last-child { border-bottom: none; }
+
+.misc-row-text { min-width: 0; }
+.misc-row-title { font-size: 15px; font-weight: 500; }
+.misc-row-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+  line-height: 1.7;
+}
+.misc-row-caret { flex-shrink: 0; color: var(--text-muted); font-size: 15px; }
+
+.misc-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 2;
+  padding: 4px 6px 0;
+}
+
+
+/* ==========================================================================
+   TOGGLE SWITCH
+   A checkbox styled as a switch. The input itself stays in the page rather
+   than being replaced by markup, so it keeps its keyboard behaviour and
+   remains readable to assistive technology.
+   ====================================================================== */
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 46px;
+  height: 26px;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  z-index: 1;
+}
+
+.switch .track {
+  position: absolute;
+  inset: 0;
+  border-radius: 13px;
+  background: var(--divider);
+  transition: background-color .2s var(--ease);
+}
+
+.switch .thumb {
+  position: absolute;
+  top: 3px;
+  /* Written in physical pixels from the left rather than logical properties,
+     because the thumb must travel the same visual direction in both text
+     directions — a switch is a switch, not a sentence. */
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  transition: transform .2s var(--ease);
+}
+
+.switch input:checked ~ .track { background: var(--brand); }
+.switch input:checked ~ .thumb { transform: translateX(20px); }
+
+
+/* ==========================================================================
+   PROFILE FORM
+   ====================================================================== */
+.profile-form { padding: 4px 0 8px; }
+
+.profile-city {
+  background: color-mix(in srgb, var(--brand) 9%, transparent);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  margin-bottom: 16px;
+}
+.profile-city .city-label { font-size: 12px; color: var(--text-muted); }
+.profile-city .city-value { font-size: 16px; font-weight: 700; margin-top: 2px; }
+.profile-city .city-note {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  line-height: 1.7;
+}
+
+.profile-actions { display: flex; gap: 10px; margin-top: 20px; }
+.profile-actions .btn-primary { flex: 2; }
+.profile-actions .btn-flat { flex: 1; }
+
+/* Search box inside an option sheet. */
+.sheet-search {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  margin-bottom: 10px;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: var(--background);
+  outline: none;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--text-primary);
+}
+.sheet-search:focus { border-color: var(--brand); background: var(--surface); }
+
+
+/* ==========================================================================
+   INVITE SCREEN
+   ====================================================================== */
+.invite-code-card {
+  background: var(--brand);
+  color: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
+  padding: 22px 18px 18px;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+.invite-code-label { font-size: 13px; opacity: .85; margin-bottom: 12px; }
+
+/* The code itself. Latin and case-sensitive, so it runs left to right, and
+   the generous tracking makes each character distinct when read aloud or
+   copied by hand. */
+.invite-code {
+  direction: ltr;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  /* Compensates for the trailing letter-space, so the code stays centred. */
+  text-indent: 6px;
+  margin-bottom: 6px;
+}
+
+.invite-code-note { font-size: 12px; opacity: .8; line-height: 1.8; }
+
+.invite-copy {
+  margin-top: 14px;
+  width: 100%;
+  height: 44px;
+  border-radius: var(--radius);
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.credits-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 16px;
+}
+.credits-label { font-size: 14px; line-height: 1.7; }
+.credits-value {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: #212121;
+  border-radius: 16px;
+  padding: 6px 14px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.credits-none { font-size: 13px; color: var(--text-muted); padding: 15px 16px; }
+
+.invite-how { padding: 15px 16px; }
+.invite-how-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.invite-how-text { font-size: 13px; color: var(--text-muted); line-height: 2.1; }
+
+/* The letter, shown exactly as it will be pasted. pre-wrap keeps the blank
+   lines that make it readable in a chat. */
+.invite-letter {
+  white-space: pre-wrap;
+  font-size: 13px;
+  line-height: 2;
+  background: var(--background);
+  border-radius: var(--radius);
+  padding: 14px;
+  margin: 0 16px 14px;
+  max-height: 240px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+
+/* ==========================================================================
+   CONTACT FORM
+   ====================================================================== */
+.contact-intro {
+  font-size: 14px;
+  color: var(--text-muted);
+  line-height: 2;
+  margin-bottom: 16px;
+}
+
+.contact-subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.subject-chip {
+  background: var(--background);
+  border: 2px solid transparent;
+  border-radius: 18px;
+  padding: 8px 16px;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: all .18s var(--ease);
+}
+.subject-chip.selected {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+  font-weight: 500;
+}
+
+.contact-textarea {
+  width: 100%;
+  min-height: 150px;
+  padding: 14px;
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  background: var(--background);
+  outline: none;
+  font-family: inherit;
+  font-size: 15px;
+  line-height: 2;
+  color: var(--text-primary);
+  resize: vertical;
+}
+.contact-textarea:focus { border-color: var(--brand); background: var(--surface); }
+.contact-textarea.invalid { border-color: var(--danger); }
+
+.contact-count {
+  text-align: end;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 6px 4px 0;
+}
