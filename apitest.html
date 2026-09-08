@@ -1,60 +1,49 @@
 <!DOCTYPE html>
 <!--
   ============================================================================
-  پاس‌کشیک — GATEWAY TEST  (apitest.html)  —  temporary, deleted once passing
+  پاس‌کشیک — GATEWAY DIAGNOSTIC  (apitest.html)  —  temporary
   ----------------------------------------------------------------------------
-  Proves the full chain in one call, before any real screen depends on it:
+  "Failed to fetch" is all the browser will say about a cross-origin failure,
+  by design: telling a page why a request to another origin failed would itself
+  leak information about that origin. So the cause has to be narrowed by
+  testing rather than read off an error.
 
-      Telegram supplies signed initData
-        -> the app forwards it unchanged
-          -> the Edge Function verifies the signature with the bot token
-            -> the function reads the database
-              -> a result comes back
+  Four probes, each ruling something in or out:
 
-  Five things can fail and they fail differently. Testing them together first
-  means a later bug in a real screen is a bug in that screen, rather than one
-  more suspect in a list of six.
+    1. Is the function URL reachable at all?
+    2. Does it answer the CORS preflight? (a JWT gate would swallow this)
+    3. Does a POST with no body reach our code? (should be 400 missing_action)
+    4. Does the real signed call work?
 
-  Opened outside Telegram this reports "no initData" and stops, which is
-  correct: there is nothing to sign with.
+  The first probe that fails identifies the layer at fault.
   ============================================================================
 -->
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>تست اتصال</title>
+<title>تشخیص اتصال</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="stylesheet" href="fonts/vazirmatn.css">
 <style>
   body {
     font-family: Vazirmatn, Tahoma, sans-serif;
-    background: #ECEFF1;
-    margin: 0;
-    padding: 14px;
-    font-size: 14px;
-    line-height: 1.9;
+    background: #ECEFF1; margin: 0; padding: 12px;
+    font-size: 13px; line-height: 1.9;
   }
   .card {
-    background: #fff;
-    border-radius: 8px;
-    padding: 14px;
-    margin-bottom: 10px;
-    box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    background: #fff; border-radius: 8px; padding: 12px;
+    margin-bottom: 9px; box-shadow: 0 1px 3px rgba(0,0,0,.2);
     word-break: break-all;
   }
-  .name { font-weight: 700; margin-bottom: 6px; }
+  .name { font-weight: 700; margin-bottom: 5px; }
   .ok  { color: #2E7D32; }
   .bad { color: #C62828; }
   pre {
-    background: #F5F5F5;
-    padding: 10px;
-    border-radius: 6px;
-    overflow-x: auto;
-    font-size: 12px;
-    direction: ltr;
-    text-align: left;
-    margin: 6px 0 0;
+    background: #F5F5F5; padding: 9px; border-radius: 6px;
+    overflow-x: auto; font-size: 11px;
+    direction: ltr; text-align: left; margin: 5px 0 0;
+    white-space: pre-wrap;
   }
 </style>
 </head>
@@ -63,17 +52,11 @@
 <div id="out">در حال بررسی…</div>
 
 <script>
-/* CHANGE THIS if the project URL ever changes. */
+/* Must match the deployed function exactly, including the /functions/v1/ path. */
 const FUNCTION_URL = 'https://cxksklayzylbqlbgjtsu.supabase.co/functions/v1/api';
 
 const out = document.getElementById('out');
 
-/**
- * Append one result block.
- *
- * @param {string} name  Heading.
- * @param {string} html  Body; may contain markup.
- */
 function show(name, html) {
   const div = document.createElement('div');
   div.className = 'card';
@@ -88,63 +71,111 @@ function show(name, html) {
   tg?.ready?.();
   tg?.expand?.();
 
-  const insideTelegram = tg && tg.platform !== 'unknown';
-  show('محیط اجرا', insideTelegram
-    ? '<span class="ok">داخل تلگرام — ' + tg.platform + '</span>'
-    : '<span class="bad">خارج از تلگرام</span>');
+  show('آدرس تابع', '<pre>' + FUNCTION_URL + '</pre>');
 
-  const initData = tg?.initData || '';
+  /* --------------------------------------------------------------------
+     PROBE 1 — is anything listening?
 
-  /*
-    initData is empty outside Telegram, and also inside it if the Mini App was
-    not opened through a registered link. The second case is the one worth
-    catching early: the page loads and looks fine, but nothing can ever
-    authenticate.
-  */
-  if (!initData) {
-    show('initData', '<span class="bad">خالی است</span><br>' +
-      'برنامه باید از طریق دکمه منو یا لینک ربات باز شود.');
+     mode 'no-cors' asks the browser to make the request without enforcing
+     the cross-origin rules. The response is opaque — nothing can be read
+     from it — but the request either completes or it does not, which tells
+     us whether the host exists and answers at all. That separates "wrong
+     URL" from "reachable but refusing".
+     ----------------------------------------------------------------- */
+  try {
+    await fetch(FUNCTION_URL, { method: 'POST', mode: 'no-cors' });
+    show('۱. دسترسی به سرور',
+      '<span class="ok">سرور پاسخ می‌دهد</span>');
+  } catch (error) {
+    show('۱. دسترسی به سرور',
+      '<span class="bad">سرور در دسترس نیست</span><pre>' + error.message + '</pre>' +
+      'آدرس اشتباه است یا تابع مستقر نشده.');
     return;
   }
 
-  show('initData', '<span class="ok">دریافت شد — ' +
-    initData.length + ' کاراکتر</span>');
+  /* --------------------------------------------------------------------
+     PROBE 2 — the CORS preflight.
+
+     Before a cross-origin POST carrying JSON, the browser sends OPTIONS and
+     refuses to proceed unless it is answered with permissive headers.
+
+     This is where a JWT gate shows up: Supabase rejects the unauthenticated
+     OPTIONS before our handler runs, and its rejection carries no CORS
+     headers, so the browser reports the whole thing as a fetch failure with
+     no further detail.
+     ----------------------------------------------------------------- */
+  try {
+    const response = await fetch(FUNCTION_URL, { method: 'OPTIONS' });
+    const allowOrigin = response.headers.get('access-control-allow-origin');
+
+    show('۲. بررسی CORS',
+      (response.ok && allowOrigin
+        ? '<span class="ok">موفق</span>'
+        : '<span class="bad">ناموفق</span>') +
+      '<br>کد: ' + response.status +
+      '<br>allow-origin: ' + (allowOrigin || 'ندارد'));
+
+    if (!allowOrigin) {
+      show('احتمال بالا',
+        '<span class="bad">تأیید JWT هنوز روشن است.</span><br>' +
+        'در تنظیمات تابع، گزینه Verify JWT را خاموش کنید.');
+    }
+  } catch (error) {
+    show('۲. بررسی CORS',
+      '<span class="bad">ناموفق</span><pre>' + error.message + '</pre>');
+  }
+
+  /* --------------------------------------------------------------------
+     PROBE 3 — does our own code run?
+
+     An empty body should produce our own 400 missing_action. Seeing that
+     exact response proves the request travelled all the way through the
+     platform and into the handler. Any other status means it was stopped
+     before reaching us.
+     ----------------------------------------------------------------- */
+  try {
+    const response = await fetch(FUNCTION_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({})
+    });
+    const text = await response.text();
+
+    show('۳. اجرای کد تابع',
+      (response.status === 400
+        ? '<span class="ok">کد تابع اجرا شد</span>'
+        : '<span class="bad">پاسخ غیرمنتظره</span>') +
+      '<br>کد: ' + response.status + '<pre>' + text + '</pre>');
+  } catch (error) {
+    show('۳. اجرای کد تابع',
+      '<span class="bad">ناموفق</span><pre>' + error.message + '</pre>');
+  }
+
+  /* --------------------------------------------------------------------
+     PROBE 4 — the real call.
+     ----------------------------------------------------------------- */
+  const initData = tg?.initData || '';
+  if (!initData) {
+    show('۴. تماس واقعی',
+      '<span class="bad">initData خالی است</span>');
+    return;
+  }
 
   try {
     const response = await fetch(FUNCTION_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // The blob is forwarded byte for byte. Re-encoding or reordering it
-      // would change the string that was signed and the signature would fail.
       body: JSON.stringify({ action: 'ping', initData })
     });
-
     const text = await response.text();
-    let parsed;
-    try { parsed = JSON.parse(text); } catch { parsed = null; }
 
-    if (!response.ok) {
-      show('پاسخ سرور',
-        '<span class="bad">خطا — کد ' + response.status + '</span>' +
-        '<pre>' + text + '</pre>');
-      return;
-    }
-
-    show('پاسخ سرور', '<span class="ok">موفق</span><pre>' +
-      JSON.stringify(parsed, null, 2) + '</pre>');
-
-    if (parsed?.you) {
-      show('هویت تأییدشده',
-        'شناسه: ' + parsed.you.telegramId + '<br>' +
-        'مالک: ' + (parsed.you.isOwner ? '<span class="ok">بله</span>'
-                                       : '<span class="bad">خیر</span>') + '<br>' +
-        'تعداد کاربران در دیتابیس: ' + parsed.userCount);
-    }
-
+    show('۴. تماس واقعی',
+      (response.ok ? '<span class="ok">موفق</span>'
+                   : '<span class="bad">خطا</span>') +
+      '<br>کد: ' + response.status + '<pre>' + text + '</pre>');
   } catch (error) {
-    // A network-level failure, distinct from the server answering with an
-    // error — usually CORS, a wrong URL, or the function not deployed.
-    show('اتصال', '<span class="bad">ناموفق</span><pre>' + error.message + '</pre>');
+    show('۴. تماس واقعی',
+      '<span class="bad">ناموفق</span><pre>' + error.message + '</pre>');
   }
 })();
 </script>
