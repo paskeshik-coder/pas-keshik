@@ -3,19 +3,18 @@
   ============================================================================
   پاس‌کشیک — GATEWAY DIAGNOSTIC  (apitest.html)  —  temporary
   ----------------------------------------------------------------------------
-  "Failed to fetch" is all the browser will say about a cross-origin failure,
-  by design: telling a page why a request to another origin failed would itself
-  leak information about that origin. So the cause has to be narrowed by
-  testing rather than read off an error.
+  Confirms the full chain before any real screen depends on it:
 
-  Four probes, each ruling something in or out:
+      Telegram supplies signed initData
+        -> the app forwards it unchanged
+          -> the Edge Function verifies the signature with the bot token
+            -> the function reads the database
+              -> a result comes back
 
-    1. Is the function URL reachable at all?
-    2. Does it answer the CORS preflight? (a JWT gate would swallow this)
-    3. Does a POST with no body reach our code? (should be 400 missing_action)
-    4. Does the real signed call work?
-
-  The first probe that fails identifies the layer at fault.
+  Every probe is wrapped so that a failure in one cannot stop the others, and
+  a top-level error handler prints anything that escapes. Without that, a
+  single scripting mistake leaves a half-drawn page and no explanation — which
+  looks identical to a server problem and wastes time on the wrong suspect.
   ============================================================================
 -->
 <html lang="fa" dir="rtl">
@@ -52,24 +51,32 @@
 <div id="out">در حال بررسی…</div>
 
 <script>
-/* Must match the deployed function exactly, including the /functions/v1/ path. */
+/* ==========================================================================
+   SETTINGS — the only two lines that need editing.
+   ====================================================================== */
+
+/* Copy this from the function's own page in the Supabase dashboard. */
 const FUNCTION_URL = 'https://cxksklayzylbqlbgjtsu.supabase.co/functions/v1/api';
 
 /*
-  The project's publishable key, required on every Edge Function call.
+  The project's publishable key. Required on every Edge Function call.
 
   Supabase's gateway demands this regardless of the "Verify JWT" setting: that
   toggle controls whether a signed USER token is required, while this header
   identifies the PROJECT. Without it the gateway answers 401 and the request
   never reaches the function at all.
 
-  Safe to be public — it is designed to live in browser code and grants nothing
-  on its own. Not to be confused with the service_role key, which bypasses
-  every security rule and never leaves Supabase.
+  Safe to be public — designed to live in browser code and grants nothing on
+  its own. Not to be confused with the service_role key, which bypasses every
+  security rule and never leaves Supabase.
 */
 const PUBLISHABLE_KEY = 'sb_publishable_1P-ZdZ0s-eKWKjwzwmD53Q_TObriy_N';
 
-/** Headers every call to the gateway needs. */
+
+/* ==========================================================================
+   DIAGNOSTIC
+   ====================================================================== */
+
 const API_HEADERS = {
   'Content-Type': 'application/json',
   'apikey': PUBLISHABLE_KEY,
@@ -85,8 +92,42 @@ function show(name, html) {
   out.appendChild(div);
 }
 
+/*
+  Catch anything that escapes, and put it on screen.
+
+  Without this a scripting error stops the page mid-draw and leaves no trace,
+  since there is no console to read on a phone. A visible error is worth far
+  more than a tidy failure.
+*/
+window.addEventListener('error', event => {
+  show('خطای اسکریپت',
+    '<span class="bad">' + event.message + '</span>' +
+    '<pre>خط ' + event.lineno + '</pre>');
+});
+
+/**
+ * Run one probe, catching its failure so later probes still run.
+ *
+ * @param {string}   name  Heading for the result card.
+ * @param {Function} fn    Async probe returning the HTML to display.
+ */
+async function probe(name, fn) {
+  try {
+    show(name, await fn());
+  } catch (error) {
+    show(name, '<span class="bad">ناموفق</span><pre>' + error.message + '</pre>');
+  }
+}
+
 (async function run() {
   out.textContent = '';
+
+  if (PUBLISHABLE_KEY.startsWith('PASTE_')) {
+    show('تنظیمات',
+      '<span class="bad">کلید publishable وارد نشده است.</span><br>' +
+      'مقدار PUBLISHABLE_KEY را در فایل جایگزین کنید.');
+    return;
+  }
 
   const tg = window.Telegram?.WebApp;
   tg?.ready?.();
@@ -94,67 +135,28 @@ function show(name, html) {
 
   show('آدرس تابع', '<pre>' + FUNCTION_URL + '</pre>');
 
-  /* --------------------------------------------------------------------
-     PROBE 1 — is anything listening?
+  await probe('۱. محیط اجرا', async () => {
+    const inside = tg && tg.platform !== 'unknown';
+    return inside
+      ? '<span class="ok">داخل تلگرام — ' + tg.platform + '</span>'
+      : '<span class="bad">خارج از تلگرام</span>';
+  });
 
-     mode 'no-cors' asks the browser to make the request without enforcing
-     the cross-origin rules. The response is opaque — nothing can be read
-     from it — but the request either completes or it does not, which tells
-     us whether the host exists and answers at all. That separates "wrong
-     URL" from "reachable but refusing".
-     ----------------------------------------------------------------- */
-  try {
-    await fetch(FUNCTION_URL, { method: 'POST', mode: 'no-cors' });
-    show('۱. دسترسی به سرور',
-      '<span class="ok">سرور پاسخ می‌دهد</span>');
-  } catch (error) {
-    show('۱. دسترسی به سرور',
-      '<span class="bad">سرور در دسترس نیست</span><pre>' + error.message + '</pre>' +
-      'آدرس اشتباه است یا تابع مستقر نشده.');
-    return;
-  }
+  await probe('۲. initData', async () => {
+    const initData = tg?.initData || '';
+    return initData
+      ? '<span class="ok">دریافت شد — ' + initData.length + ' کاراکتر</span>'
+      : '<span class="bad">خالی است</span><br>' +
+        'برنامه باید از طریق دکمه منو یا لینک ربات باز شود.';
+  });
 
-  /* --------------------------------------------------------------------
-     PROBE 2 — the CORS preflight.
-
-     Before a cross-origin POST carrying JSON, the browser sends OPTIONS and
-     refuses to proceed unless it is answered with permissive headers.
-
-     This is where a JWT gate shows up: Supabase rejects the unauthenticated
-     OPTIONS before our handler runs, and its rejection carries no CORS
-     headers, so the browser reports the whole thing as a fetch failure with
-     no further detail.
-     ----------------------------------------------------------------- */
-  try {
-    const response = await fetch(FUNCTION_URL, { method: 'OPTIONS' });
-    const allowOrigin = response.headers.get('access-control-allow-origin');
-
-    show('۲. بررسی CORS',
-      (response.ok && allowOrigin
-        ? '<span class="ok">موفق</span>'
-        : '<span class="bad">ناموفق</span>') +
-      '<br>کد: ' + response.status +
-      '<br>allow-origin: ' + (allowOrigin || 'ندارد'));
-
-    if (!allowOrigin) {
-      show('احتمال بالا',
-        '<span class="bad">تأیید JWT هنوز روشن است.</span><br>' +
-        'در تنظیمات تابع، گزینه Verify JWT را خاموش کنید.');
-    }
-  } catch (error) {
-    show('۲. بررسی CORS',
-      '<span class="bad">ناموفق</span><pre>' + error.message + '</pre>');
-  }
-
-  /* --------------------------------------------------------------------
-     PROBE 3 — does our own code run?
-
-     An empty body should produce our own 400 missing_action. Seeing that
-     exact response proves the request travelled all the way through the
-     platform and into the handler. Any other status means it was stopped
-     before reaching us.
-     ----------------------------------------------------------------- */
-  try {
+  /*
+    An empty body should produce our own 400 missing_action. Seeing that exact
+    response proves the request travelled through the platform and into our
+    handler — as opposed to being answered by the gateway, or by the default
+    template that ships with a new function.
+  */
+  await probe('۳. اجرای کد تابع', async () => {
     const response = await fetch(FUNCTION_URL, {
       method: 'POST',
       headers: API_HEADERS,
@@ -162,42 +164,44 @@ function show(name, html) {
     });
     const text = await response.text();
 
-    show('۳. اجرای کد تابع',
-      (response.status === 400
-        ? '<span class="ok">کد تابع اجرا شد</span>'
-        : '<span class="bad">پاسخ غیرمنتظره</span>') +
-      '<br>کد: ' + response.status + '<pre>' + text + '</pre>');
-  } catch (error) {
-    show('۳. اجرای کد تابع',
-      '<span class="bad">ناموفق</span><pre>' + error.message + '</pre>');
-  }
+    const isOurs = (response.status === 400 && text.includes('missing_action'));
 
-  /* --------------------------------------------------------------------
-     PROBE 4 — the real call.
-     ----------------------------------------------------------------- */
-  const initData = tg?.initData || '';
-  if (!initData) {
-    show('۴. تماس واقعی',
-      '<span class="bad">initData خالی است</span>');
-    return;
-  }
+    return (isOurs
+      ? '<span class="ok">کد گیت‌وی اجرا شد</span>'
+      : '<span class="bad">پاسخ از گیت‌وی ما نیست</span>') +
+      '<br>کد: ' + response.status + '<pre>' + text + '</pre>';
+  });
 
-  try {
+  await probe('۴. تماس واقعی', async () => {
+    const initData = tg?.initData || '';
+    if (!initData) return '<span class="bad">initData خالی است</span>';
+
     const response = await fetch(FUNCTION_URL, {
       method: 'POST',
       headers: API_HEADERS,
+      // Forwarded byte for byte. Re-encoding or reordering would change the
+      // string that was signed, and the signature would fail.
       body: JSON.stringify({ action: 'ping', initData })
     });
     const text = await response.text();
 
-    show('۴. تماس واقعی',
-      (response.ok ? '<span class="ok">موفق</span>'
-                   : '<span class="bad">خطا</span>') +
-      '<br>کد: ' + response.status + '<pre>' + text + '</pre>');
-  } catch (error) {
-    show('۴. تماس واقعی',
-      '<span class="bad">ناموفق</span><pre>' + error.message + '</pre>');
-  }
+    let extra = '';
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed?.you) {
+        extra = '<br>شناسه: ' + parsed.you.telegramId +
+                '<br>مالک: ' + (parsed.you.isOwner
+                  ? '<span class="ok">بله</span>'
+                  : '<span class="bad">خیر</span>') +
+                '<br>کاربران ثبت‌شده: ' + parsed.userCount;
+      }
+    } catch { /* not JSON; the raw text below is the useful part */ }
+
+    return (response.ok ? '<span class="ok">موفق</span>'
+                        : '<span class="bad">خطا</span>') +
+      '<br>کد: ' + response.status + extra +
+      '<pre>' + text + '</pre>';
+  });
 })();
 </script>
 
