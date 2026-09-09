@@ -55,6 +55,27 @@
 /* Must match the deployed function exactly, including the /functions/v1/ path. */
 const FUNCTION_URL = 'https://cxksklayzylbqlbgjtsu.supabase.co/functions/v1/api';
 
+/*
+  The project's publishable key, required on every Edge Function call.
+
+  Supabase's gateway demands this regardless of the "Verify JWT" setting: that
+  toggle controls whether a signed USER token is required, while this header
+  identifies the PROJECT. Without it the gateway answers 401 and the request
+  never reaches the function at all.
+
+  Safe to be public — it is designed to live in browser code and grants nothing
+  on its own. Not to be confused with the service_role key, which bypasses
+  every security rule and never leaves Supabase.
+*/
+const PUBLISHABLE_KEY = 'sb_publishable_1P-ZdZ0s-eKWKjwzwmD53Q_TObriy_N';
+
+/** Headers every call to the gateway needs. */
+const API_HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': PUBLISHABLE_KEY,
+  'Authorization': 'Bearer ' + PUBLISHABLE_KEY
+};
+
 const out = document.getElementById('out');
 
 function show(name, html) {
@@ -136,7 +157,7 @@ function show(name, html) {
   try {
     const response = await fetch(FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: API_HEADERS,
       body: JSON.stringify({})
     });
     const text = await response.text();
@@ -164,7 +185,7 @@ function show(name, html) {
   try {
     const response = await fetch(FUNCTION_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: API_HEADERS,
       body: JSON.stringify({ action: 'ping', initData })
     });
     const text = await response.text();
