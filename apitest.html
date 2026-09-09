@@ -1,208 +1,55 @@
 <!DOCTYPE html>
-<!--
-  ============================================================================
-  پاس‌کشیک — GATEWAY DIAGNOSTIC  (apitest.html)  —  temporary
-  ----------------------------------------------------------------------------
-  Confirms the full chain before any real screen depends on it:
-
-      Telegram supplies signed initData
-        -> the app forwards it unchanged
-          -> the Edge Function verifies the signature with the bot token
-            -> the function reads the database
-              -> a result comes back
-
-  Every probe is wrapped so that a failure in one cannot stop the others, and
-  a top-level error handler prints anything that escapes. Without that, a
-  single scripting mistake leaves a half-drawn page and no explanation — which
-  looks identical to a server problem and wastes time on the wrong suspect.
-  ============================================================================
--->
-<html lang="fa" dir="rtl">
+<html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>تشخیص اتصال</title>
+<title>test</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<link rel="stylesheet" href="fonts/vazirmatn.css">
-<style>
-  body {
-    font-family: Vazirmatn, Tahoma, sans-serif;
-    background: #ECEFF1; margin: 0; padding: 12px;
-    font-size: 13px; line-height: 1.9;
-  }
-  .card {
-    background: #fff; border-radius: 8px; padding: 12px;
-    margin-bottom: 9px; box-shadow: 0 1px 3px rgba(0,0,0,.2);
-    word-break: break-all;
-  }
-  .name { font-weight: 700; margin-bottom: 5px; }
-  .ok  { color: #2E7D32; }
-  .bad { color: #C62828; }
-  pre {
-    background: #F5F5F5; padding: 9px; border-radius: 6px;
-    overflow-x: auto; font-size: 11px;
-    direction: ltr; text-align: left; margin: 5px 0 0;
-    white-space: pre-wrap;
-  }
-</style>
 </head>
-<body>
+<body style="font-family:monospace;font-size:13px;padding:10px;word-break:break-all">
 
-<div id="out">در حال بررسی…</div>
+<div id="log">starting...</div>
 
 <script>
-/* ==========================================================================
-   SETTINGS — the only two lines that need editing.
-   ====================================================================== */
+var URL_ = "https://cxksklayzylbqlbgjtsu.supabase.co/functions/v1/api";
+var KEY_ = "sb_publishable_1P-ZdZ0s-eKWKjwzwmD53Q_TObriy_N";
 
-/* Copy this from the function's own page in the Supabase dashboard. */
-const FUNCTION_URL = 'https://cxksklayzylbqlbgjtsu.supabase.co/functions/v1/api';
+var log = document.getElementById("log");
+function p(t) { log.innerHTML += "<br><br>" + t; }
 
-/*
-  The project's publishable key. Required on every Edge Function call.
+log.innerHTML = "script running";
 
-  Supabase's gateway demands this regardless of the "Verify JWT" setting: that
-  toggle controls whether a signed USER token is required, while this header
-  identifies the PROJECT. Without it the gateway answers 401 and the request
-  never reaches the function at all.
+try {
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if (tg && tg.ready) { tg.ready(); tg.expand(); }
 
-  Safe to be public — designed to live in browser code and grants nothing on
-  its own. Not to be confused with the service_role key, which bypasses every
-  security rule and never leaves Supabase.
-*/
-const PUBLISHABLE_KEY = 'sb_publishable_1P-ZdZ0s-eKWKjwzwmD53Q_TObriy_N';
+  p("platform: " + (tg ? tg.platform : "no telegram"));
+  p("initData length: " + (tg && tg.initData ? tg.initData.length : 0));
+  p("key set: " + (KEY_ === "PUT_KEY_HERE" ? "NO - EDIT THE FILE" : "yes"));
 
+  fetch(URL_, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": KEY_,
+      "Authorization": "Bearer " + KEY_
+    },
+    body: JSON.stringify({ action: "ping", initData: (tg && tg.initData) || "" })
+  })
+  .then(function (r) {
+    p("status: " + r.status);
+    return r.text();
+  })
+  .then(function (t) {
+    p("response: " + t);
+  })
+  .catch(function (e) {
+    p("fetch failed: " + e.message);
+  });
 
-/* ==========================================================================
-   DIAGNOSTIC
-   ====================================================================== */
-
-const API_HEADERS = {
-  'Content-Type': 'application/json',
-  'apikey': PUBLISHABLE_KEY,
-  'Authorization': 'Bearer ' + PUBLISHABLE_KEY
-};
-
-const out = document.getElementById('out');
-
-function show(name, html) {
-  const div = document.createElement('div');
-  div.className = 'card';
-  div.innerHTML = '<div class="name">' + name + '</div>' + html;
-  out.appendChild(div);
+} catch (e) {
+  p("script error: " + e.message);
 }
-
-/*
-  Catch anything that escapes, and put it on screen.
-
-  Without this a scripting error stops the page mid-draw and leaves no trace,
-  since there is no console to read on a phone. A visible error is worth far
-  more than a tidy failure.
-*/
-window.addEventListener('error', event => {
-  show('خطای اسکریپت',
-    '<span class="bad">' + event.message + '</span>' +
-    '<pre>خط ' + event.lineno + '</pre>');
-});
-
-/**
- * Run one probe, catching its failure so later probes still run.
- *
- * @param {string}   name  Heading for the result card.
- * @param {Function} fn    Async probe returning the HTML to display.
- */
-async function probe(name, fn) {
-  try {
-    show(name, await fn());
-  } catch (error) {
-    show(name, '<span class="bad">ناموفق</span><pre>' + error.message + '</pre>');
-  }
-}
-
-(async function run() {
-  out.textContent = '';
-
-  if (PUBLISHABLE_KEY.startsWith('PASTE_')) {
-    show('تنظیمات',
-      '<span class="bad">کلید publishable وارد نشده است.</span><br>' +
-      'مقدار PUBLISHABLE_KEY را در فایل جایگزین کنید.');
-    return;
-  }
-
-  const tg = window.Telegram?.WebApp;
-  tg?.ready?.();
-  tg?.expand?.();
-
-  show('آدرس تابع', '<pre>' + FUNCTION_URL + '</pre>');
-
-  await probe('۱. محیط اجرا', async () => {
-    const inside = tg && tg.platform !== 'unknown';
-    return inside
-      ? '<span class="ok">داخل تلگرام — ' + tg.platform + '</span>'
-      : '<span class="bad">خارج از تلگرام</span>';
-  });
-
-  await probe('۲. initData', async () => {
-    const initData = tg?.initData || '';
-    return initData
-      ? '<span class="ok">دریافت شد — ' + initData.length + ' کاراکتر</span>'
-      : '<span class="bad">خالی است</span><br>' +
-        'برنامه باید از طریق دکمه منو یا لینک ربات باز شود.';
-  });
-
-  /*
-    An empty body should produce our own 400 missing_action. Seeing that exact
-    response proves the request travelled through the platform and into our
-    handler — as opposed to being answered by the gateway, or by the default
-    template that ships with a new function.
-  */
-  await probe('۳. اجرای کد تابع', async () => {
-    const response = await fetch(FUNCTION_URL, {
-      method: 'POST',
-      headers: API_HEADERS,
-      body: JSON.stringify({})
-    });
-    const text = await response.text();
-
-    const isOurs = (response.status === 400 && text.includes('missing_action'));
-
-    return (isOurs
-      ? '<span class="ok">کد گیت‌وی اجرا شد</span>'
-      : '<span class="bad">پاسخ از گیت‌وی ما نیست</span>') +
-      '<br>کد: ' + response.status + '<pre>' + text + '</pre>';
-  });
-
-  await probe('۴. تماس واقعی', async () => {
-    const initData = tg?.initData || '';
-    if (!initData) return '<span class="bad">initData خالی است</span>';
-
-    const response = await fetch(FUNCTION_URL, {
-      method: 'POST',
-      headers: API_HEADERS,
-      // Forwarded byte for byte. Re-encoding or reordering would change the
-      // string that was signed, and the signature would fail.
-      body: JSON.stringify({ action: 'ping', initData })
-    });
-    const text = await response.text();
-
-    let extra = '';
-    try {
-      const parsed = JSON.parse(text);
-      if (parsed?.you) {
-        extra = '<br>شناسه: ' + parsed.you.telegramId +
-                '<br>مالک: ' + (parsed.you.isOwner
-                  ? '<span class="ok">بله</span>'
-                  : '<span class="bad">خیر</span>') +
-                '<br>کاربران ثبت‌شده: ' + parsed.userCount;
-      }
-    } catch { /* not JSON; the raw text below is the useful part */ }
-
-    return (response.ok ? '<span class="ok">موفق</span>'
-                        : '<span class="bad">خطا</span>') +
-      '<br>کد: ' + response.status + extra +
-      '<pre>' + text + '</pre>';
-  });
-})();
 </script>
 
 </body>
