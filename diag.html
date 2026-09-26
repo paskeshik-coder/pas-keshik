@@ -1,0 +1,24 @@
+<!doctype html>
+<!--
+  Pas-Keshik diagnostics page (permanent). Shows, on screen: release
+  version, platform and Telegram version, whether initData is present and
+  its length, the gateway URL, the results of the health and me calls, and
+  the bot's webhook status. Open it inside Telegram or in any browser.
+-->
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src https://*.supabase.co; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <title>عیب‌یابی پاس‌کشیک</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="app/app.css?v=0.6.1">
+  <script src="vendor/telegram-web-app.js?v=0.6.1"></script>
+  <script type="module" src="app/diag.js?v=0.6.1"></script>
+</head>
+<body>
+  <div id="app"><div class="boot"><div class="spinner"></div></div></div>
+</body>
+</html>
