@@ -1,0 +1,1177 @@
+/*
+ * Pas-Keshik styles. Mobile-first, right-to-left, Vazirmatn.
+ *
+ * No colour is written here: every colour is a CSS variable (--c-*) set at
+ * start-up by app/theme.js from the user's Telegram theme, falling back to
+ * config.js's palette in a plain browser. Before that script runs, the CSS
+ * system colours Canvas/CanvasText keep the page readable.
+ *
+ * The space between groups of items is the one "wide gap"
+ * (config.layout.wideGapPx), set by app/theme.js as --wide-gap; every
+ * dropdown's edge spacing is --select-inset (config.layout.selectInsetPx).
+ *
+ * Font: Vazirmatn v33.003, official release
+ * https://github.com/rastikerdar/vazirmatn/releases/tag/v33.003
+ * (file fonts/webfonts/Vazirmatn[wght].woff2, renamed; SIL Open Font
+ * License, see assets/fonts/OFL.txt). Self-hosted: public CDNs are
+ * unreachable from Iran.
+ */
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../assets/fonts/Vazirmatn-Variable.woff2?v=1.0.0') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--c-bg, Canvas);
+  color: var(--c-text, CanvasText);
+  font-family: 'Vazirmatn', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100vh;
+  overscroll-behavior-y: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ---------- Shell ---------- */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 6px 10px;
+  background: var(--c-bg, Canvas);
+  border-bottom: 1px solid var(--c-border, GrayText);
+}
+
+.topbar .title {
+  flex: 1;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.icon-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.icon-btn:active {
+  background: var(--c-secondary-bg);
+}
+
+.content {
+  padding: 14px 14px 110px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.boot {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--c-border, GrayText);
+  border-top-color: var(--c-button, CanvasText);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---------- Drawer ---------- */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--c-overlay);
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  z-index: 41;
+  width: min(82vw, 320px);
+  padding: 18px 0;
+  background: var(--c-bg);
+  border-left: 1px solid var(--c-border);
+  overflow-y: auto;
+}
+
+.drawer-head {
+  padding: 4px 20px 16px;
+  border-bottom: 1px solid var(--c-border);
+  margin-bottom: 8px;
+}
+
+.drawer-head .app-name {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.drawer-head .who {
+  color: var(--c-hint);
+  font-size: 0.9rem;
+}
+
+.drawer-item {
+  display: block;
+  width: 100%;
+  padding: 14px 20px;
+  border: 0;
+  background: transparent;
+  text-align: right;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.drawer-item[aria-current='page'] {
+  color: var(--c-accent);
+  font-weight: 700;
+  background: var(--c-secondary-bg);
+}
+
+/* ---------- Live screens: red dots, offline sign, new-items pill ---------- */
+
+/* The red dot: the same clear red in light and dark (config.colors.*.dot). */
+.red-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-inline-start: 8px;
+  border-radius: 50%;
+  background: var(--c-dot);
+  vertical-align: middle;
+}
+
+/* On the menu button, at its corner, while the drawer is closed. */
+.menu-btn {
+  position: relative;
+}
+
+.menu-btn .red-dot {
+  position: absolute;
+  top: 8px;
+  left: 6px;
+  margin: 0;
+}
+
+.offline {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--c-secondary-bg);
+  color: var(--c-hint);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* «درخواست‌های جدید»: a small pill just under the header, over the list. */
+.new-pill {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  z-index: 30;
+  transform: translateX(-50%);
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--c-button);
+  color: var(--c-button-text);
+  font-size: 0.92rem;
+  box-shadow: 0 2px 8px var(--c-overlay);
+  cursor: pointer;
+}
+
+/* The browser's own scroll anchoring is off: live-list.js keeps the view
+   in place itself, the same way on every phone. */
+.live-list {
+  overflow-anchor: none;
+}
+
+/* A card that left fades out; a new one slides in. */
+.card.leaving {
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.card.entering {
+  animation: card-in 0.35s ease-out;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.leaving {
+    transition: none;
+  }
+
+  .card.entering {
+    animation: none;
+  }
+}
+
+/* ---------- Text blocks ---------- */
+
+.hint {
+  color: var(--c-hint);
+  font-size: 0.92rem;
+}
+
+.error-text {
+  color: var(--c-destructive);
+  font-size: 0.92rem;
+}
+
+/* A hint followed on the next line by a smaller note (the name step). */
+.hint-block {
+  margin: 1em 0 var(--wide-gap);
+}
+
+.hint-block p {
+  margin: 0;
+}
+
+.hint.small {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  line-height: 1.8;
+}
+
+.section-title {
+  margin: var(--wide-gap) 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--c-hint);
+}
+
+.empty {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--c-hint);
+}
+
+.empty-title {
+  color: var(--c-text);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.empty p {
+  margin: 8px 0 0;
+}
+
+/* Wide gaps between groups. */
+.gap-top {
+  margin-top: var(--wide-gap);
+}
+
+.gap-bottom {
+  margin-bottom: var(--wide-gap);
+}
+
+.groups > * + * {
+  margin-top: var(--wide-gap);
+}
+
+/* A small heading over a group (e.g. «پرتکرارها»). */
+.group-title {
+  font-weight: 700;
+  color: var(--c-hint);
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 8px 18px;
+  border: 1.5px solid var(--c-button);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--c-button);
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn.primary {
+  background: var(--c-button);
+  color: var(--c-button-text);
+}
+
+.btn.danger {
+  border-color: var(--c-destructive);
+  color: var(--c-destructive);
+}
+
+.btn.small {
+  min-height: 38px;
+  padding: 4px 14px;
+  font-size: 0.92rem;
+}
+
+.btn.block {
+  display: flex;
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.link-btn {
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--c-link);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.actions .btn {
+  flex: 1 1 auto;
+}
+
+.stack > * + * {
+  margin-top: 12px;
+}
+
+/* ---------- Forms ---------- */
+
+.field {
+  margin-bottom: var(--wide-gap);
+}
+
+.field .error-text {
+  margin: 4px 0 0;
+}
+
+/* Under a price field, after the wide gap: the amount in words, or what is
+   wrong with it in the same spot (widgets.js priceInput). */
+.field .price-words {
+  margin: var(--wide-gap) 0 0;
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.field > label,
+.field > .label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.input,
+.select {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--c-border);
+  border-radius: 12px;
+  background: var(--c-section-bg);
+}
+
+/* Every dropdown draws its own arrow (the system's sits against the left
+   edge): a small chevron in the text colour, made of two gradients (no
+   image), --select-inset from the left edge — the same gap as between the
+   text and the right edge. The text stops before the arrow (the left
+   padding is the inset, the arrow and a gap), so a long choice never runs
+   under it. In a left-to-right page the sides swap. */
+.select {
+  --arrow: 10px;
+  appearance: none;
+  -webkit-appearance: none;
+  padding-inline: var(--select-inset, 14px) calc(var(--select-inset, 14px) + var(--arrow) + 8px);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background-color: var(--c-section-bg);
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-size: calc(var(--arrow) / 2) calc(var(--arrow) / 2), calc(var(--arrow) / 2) calc(var(--arrow) / 2);
+  background-position:
+    var(--select-inset, 14px) calc(50% + 1px),
+    calc(var(--select-inset, 14px) + var(--arrow) / 2) calc(50% + 1px);
+  background-repeat: no-repeat;
+}
+
+[dir='ltr'] .select {
+  background-position:
+    calc(100% - var(--select-inset, 14px) - var(--arrow) / 2) calc(50% + 1px),
+    calc(100% - var(--select-inset, 14px)) calc(50% + 1px);
+}
+
+.input:focus,
+.select:focus {
+  outline: none;
+  border-color: var(--c-button);
+}
+
+.input.ltr {
+  direction: ltr;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.chip {
+  max-width: 100%;
+  min-height: 38px;
+  padding: 4px 14px;
+  border: 1.5px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-secondary-bg);
+  cursor: pointer;
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--c-button);
+  background: var(--c-button);
+  color: var(--c-button-text);
+}
+
+/* The board's filters: a wide gap between «درخواست جدید» and the heading
+   «فیلترها», between the heading and the first filter, and after the
+   filters (before the cards); a normal gap between the two filters, which
+   are one group. One filter per row, so a full university name
+   («دانشگاه علوم پزشکی شهید بهشتی») fits its dropdown uncut. */
+.filters {
+  margin: var(--wide-gap) 0;
+}
+
+.filters-title {
+  margin: 0 0 var(--wide-gap);
+  font-size: 0.85rem;
+  font-weight: 400;
+  line-height: inherit;
+  color: var(--c-hint);
+}
+
+.filter-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+/* The time as hours : minutes, left to right. */
+.clock-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 8px;
+}
+
+.clock-part {
+  width: 88px;
+  text-align: center;
+}
+
+.clock-part .input {
+  font-size: 1.2rem;
+}
+
+.clock-sep {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 48px;
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid var(--c-border);
+  border-radius: 16px;
+  background: var(--c-section-bg);
+}
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.card-title {
+  font-weight: 700;
+}
+
+.badge {
+  flex: none;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--c-secondary-bg);
+  color: var(--c-accent);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge.success {
+  color: var(--c-success);
+}
+
+.badge.muted {
+  color: var(--c-hint);
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.row .k {
+  flex: none;
+  min-width: 64px;
+  color: var(--c-hint);
+}
+
+.row .v {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.price {
+  font-weight: 700;
+}
+
+.note {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--c-secondary-bg);
+  font-size: 0.92rem;
+}
+
+/* The lowest live offer (the second invite reward): the last line inside a
+   جستجو card, under a thin divider; in the offer form, between the price
+   field's label and the field. */
+.lowest-offer {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--c-border);
+  color: var(--c-accent);
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.lowest-offer.in-form {
+  margin: 0 0 8px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* The invite rewards box: «پاداش اول … فعال است», then the second reward. */
+.rewards .first-active {
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--c-border);
+  font-weight: 700;
+}
+
+/* A confirmation under way (two steps before an arrangement). */
+.match-box {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1.5px solid var(--c-warning);
+  border-radius: 14px;
+}
+
+.match-box .section-title {
+  margin-top: 0;
+}
+
+.match-box .hint {
+  margin-top: 6px;
+}
+
+.offer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 1px solid var(--c-border);
+}
+
+.offer-row .price {
+  flex: 1 1 100%;
+}
+
+.offer-row .btn {
+  flex: 1;
+}
+
+.arrangement {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1.5px solid var(--c-success);
+  border-radius: 12px;
+}
+
+.arrangement .who {
+  font-weight: 700;
+}
+
+/* ---------- Intro and sign-up ---------- */
+
+/* The intro pages: image, text and button in the middle of
+   the screen. The height left is the visible height (Telegram's, when
+   available) minus the top bar (52px) and the content's padding (14px top,
+   110px bottom, kept free for toasts). */
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--tg-viewport-stable-height, 100vh) - 176px);
+  text-align: center;
+}
+
+.centered > * {
+  max-width: 100%;
+}
+
+.centered > .btn.block {
+  width: 100%;
+}
+
+/* A centred screen's carousel spans the full width (its cards are placed
+   inside it, so it has no width of its own to centre). */
+.centered > .carousel {
+  align-self: stretch;
+}
+
+/* «انتخاب» on the major screen: as wide as its label plus comfortable
+   padding, and at least 48px tall so it stays an easy tap. */
+.btn.choose {
+  min-width: 140px;
+  min-height: 48px;
+  padding: 10px 40px;
+}
+
+
+.intro .icon,
+.local-gate .icon {
+  font-size: 3.4rem;
+  line-height: 1.2;
+}
+
+/* Local mode's PIN screen: the field as wide as the buttons, its label and
+   error aligned like every other form. */
+.local-gate .field {
+  align-self: stretch;
+  text-align: start;
+}
+
+.local-gate .error-text {
+  min-height: 1.4em;
+}
+
+.intro h2 {
+  margin: 12px 0;
+  font-size: 1.35rem;
+}
+
+/* An intro text may hold line breaks (page 1 has two lines). */
+.intro p {
+  white-space: pre-line;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin: 18px 0;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-border);
+}
+
+.dot.on {
+  background: var(--c-button);
+}
+
+.step {
+  color: var(--c-hint);
+  font-size: 0.9rem;
+}
+
+/* The major carousel: square cards on a loop. Every card sits at the
+   centre of the strip and is moved into its place by a transform, so
+   changing a card's position class slides it there while its size and fade
+   change with it. The chosen major is in the middle; the previous one on
+   the right and the next one on the left are the same square, slightly
+   smaller and faded; the rest wait, invisible, just outside the strip.
+   The strip is exactly one card tall (card width 36% of the strip). */
+.carousel {
+  position: relative;
+  aspect-ratio: 100 / 36;
+  margin: var(--wide-gap) 0;
+  overflow: hidden;
+}
+
+.major-card {
+  position: absolute;
+  top: 0;
+  left: 32%;
+  width: 36%;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px;
+  border: 1.5px solid var(--c-button);
+  border-radius: 18px;
+  background: var(--c-section-bg);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.38s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.38s ease;
+}
+
+/* A side card is 82% of the centre card; one step (101% of a card's own
+   width) leaves a small gap between them. */
+.major-card.at-centre {
+  z-index: 2;
+  transform: none;
+  opacity: 1;
+  cursor: default;
+}
+
+.major-card.at-prev {
+  z-index: 1;
+  transform: translateX(101%) scale(0.82);
+  opacity: 0.45;
+}
+
+.major-card.at-next {
+  z-index: 1;
+  transform: translateX(-101%) scale(0.82);
+  opacity: 0.45;
+}
+
+.major-card.at-far-prev {
+  z-index: 0;
+  transform: translateX(202%) scale(0.64);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.major-card.at-far-next {
+  z-index: 0;
+  transform: translateX(-202%) scale(0.64);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.major-card .icon {
+  font-size: 2.2rem;
+  line-height: 1.2;
+}
+
+.major-card .name {
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+/* The phone asked for less motion: cards jump to their places. */
+@media (prefers-reduced-motion: reduce) {
+  .major-card {
+    transition: none;
+  }
+}
+
+/* The university picker: wide gaps between the search field, «پرتکرارها»
+   and the names; a little more before «دانشگاه شما در فهرست نیست؟». */
+.picker-body {
+  margin-top: var(--wide-gap);
+}
+
+.picker-body .group-title {
+  margin-bottom: var(--wide-gap);
+}
+
+.picker-body .list {
+  margin: 0;
+}
+
+.picker-missing {
+  margin-top: calc(var(--wide-gap) * 2);
+}
+
+.list {
+  margin: 10px 0;
+  border: 1px solid var(--c-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.list-item {
+  display: block;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-section-bg);
+  text-align: right;
+  cursor: pointer;
+}
+
+.list-item:last-child {
+  border-bottom: 0;
+}
+
+.list-item .sub {
+  display: block;
+  color: var(--c-hint);
+  font-size: 0.85rem;
+}
+
+.list-item[aria-selected='true'] {
+  background: var(--c-secondary-bg);
+  font-weight: 700;
+}
+
+/* Short screens (a 360×640 phone): tighter spacing, same text size. */
+@media (max-height: 700px) {
+  .centered h2 {
+    margin: 8px 0;
+  }
+}
+
+/* ---------- Calendar ---------- */
+
+.calendar {
+  padding: 10px;
+  border: 1px solid var(--c-border);
+  border-radius: 14px;
+  background: var(--c-section-bg);
+}
+
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.cal-title {
+  font-weight: 700;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  text-align: center;
+}
+
+.cal-wd {
+  color: var(--c-hint);
+  font-size: 0.85rem;
+}
+
+.cal-day {
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cal-day:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.cal-day.today {
+  border: 1.5px solid var(--c-border);
+}
+
+.cal-day[aria-pressed='true'] {
+  background: var(--c-button);
+  color: var(--c-button-text);
+  font-weight: 700;
+}
+
+.datetime-summary {
+  margin-top: 6px;
+  font-weight: 600;
+}
+
+/* ---------- Toast and modal ---------- */
+
+.toast {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 18px;
+  z-index: 70;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: var(--c-text);
+  color: var(--c-bg);
+  text-align: center;
+}
+
+.toast.error {
+  background: var(--c-destructive);
+  color: var(--c-button-text);
+}
+
+.modal-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--c-overlay);
+}
+
+.modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 20px 18px 24px;
+  border-radius: 20px 20px 0 0;
+  background: var(--c-bg);
+}
+
+.modal h3 {
+  margin: 0 0 8px;
+  font-size: 1.15rem;
+}
+
+.modal .lines {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--c-secondary-bg);
+  font-size: 0.95rem;
+}
+
+/* ---------- Banned notice ---------- */
+
+.banned-mark {
+  font-size: 3rem;
+  text-align: center;
+  margin-top: 12px;
+}
+
+/* ---------- Errors ---------- */
+
+.fatal {
+  margin: 24px 14px;
+  padding: 16px;
+  border: 1.5px solid var(--c-destructive, CanvasText);
+  border-radius: 14px;
+}
+
+.fatal pre {
+  white-space: pre-wrap;
+  direction: ltr;
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+/* ---------- Test panel (Local mode only) ---------- */
+
+.tp-toggle {
+  position: fixed;
+  left: 10px;
+  bottom: 10px;
+  z-index: 50;
+  padding: 6px 12px;
+  border: 1.5px solid var(--c-warning);
+  border-radius: 999px;
+  background: var(--c-bg);
+  color: var(--c-warning);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tp {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 55;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 16px 14px 60px;
+  border-top: 3px solid var(--c-warning);
+  border-radius: 18px 18px 0 0;
+  background: var(--c-bg);
+}
+
+.tp h3 {
+  margin: 0 0 4px;
+}
+
+.tp .clock-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tp .inbox-msg {
+  margin-top: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--c-secondary-bg);
+  white-space: pre-wrap;
+  font-size: 0.88rem;
+}
+
+.tp .inbox-msg .inbox-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  white-space: normal;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+/* ---------- Diagnostics page ---------- */
+
+.diag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.diag-row .k {
+  flex: 1 1 45%;
+  font-weight: 600;
+}
+
+.diag-row .v {
+  flex: 1 1 50%;
+  overflow-wrap: anywhere;
+}
+
+.diag-row .v.ok {
+  color: var(--c-success);
+}
+
+.diag-row .v.fail {
+  color: var(--c-destructive);
+}
+
+.diag-row .v.muted {
+  color: var(--c-hint);
+}
+
+.pre {
+  white-space: pre-wrap;
+}
+
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
