@@ -1,0 +1,26 @@
+<!doctype html>
+<!--
+  Pas-Keshik backup keys page. The owner opens it once in Chrome on their
+  phone to make the backups' key pair (and again only for a restore, to
+  check the key code and copy the key file's text). Not linked from the
+  app; docs/SETUP.md gives its address. It makes no network connections at
+  all (connect-src 'none'): the keys are made in the browser and only ever
+  leave it as a file the owner saves and text the owner copies.
+-->
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="light dark">
+  <title>کلید پشتیبان‌ها</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="app/app.css?v=1.2.8">
+  <script type="module" src="app/keygen.js?v=1.2.8"></script>
+</head>
+<body>
+  <div id="app"><div class="boot"><div class="spinner"></div></div></div>
+</body>
+</html>
